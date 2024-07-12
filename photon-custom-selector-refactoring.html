@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HpvDropDown Component</title>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js" integrity="sha256-42IbU8t3tOwwbexB7ZVRHm3YDRf65aBPPjRtIUufj5I=" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0 auto;
+        }
+        /*  THIS IS TEST ONLY  */
+        .hpv-dropdown {
+            width: 400px;
+            border-style: solid;
+            border-width: thin;
+            border-radius: 8px;
+        }
+        .hpv-dropdown ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .hpv-dropdown li {
+            color: #303438;
+            padding: 5px 10px;
+            font-size: 12px;
+            text-align: left;
+            line-height: 18px;
+            font-weight: 400;
+            cursor: pointer;
+        }
+        .hpv-dropdown li:hover {
+            background-color: #f3f3f3;
+        }
+        .hpv-dropdown label {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .hpv-dropdown #checkboxContainer {
+            max-height: 1300px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .hpv-dropdown #checkboxSecondaryContainer {
+            overflow-y: auto;
+            padding-top: 10px;
+        }
+        .hpv-dropdown #root-container {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-grow: 1;
+            margin: 50px;
+        }
+        .hpv-dropdown .search-container {
+            position: relative;
+            width: 100%;
+        }
+        .hpv-dropdown .search-input {
+            width: 100%;
+            padding: 8px 30px 8px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .hpv-dropdown .clear-search {
+            position: absolute;
+            right: 10px;
+            top: 25%;
+            height: 18px;
+            background-color: #e3e3e3;
+            border: 0;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            width: 18px;
+        }
+        .hpv-dropdown .clear-search:hover {
+            background-color: #ffacac;
+        }
+        .hpv-dropdown .optgroup {
+            font-weight: bold;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #e7e7e7;
+            padding: 5px 10px;
+            color: rgba(48, 52, 56, .7);
+            cursor: default;
+            margin: 9px 0 0 0;
+            font-size: 14px;
+            text-shadow: none;
+            line-height: 20px;
+        }
+        .hpv-dropdown .optgroup::before {
+            content: '▼';
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.3s;
+        }
+        .hpv-dropdown .optgroup.collapsed::before {
+            transform: rotate(-90deg);
+        }
+        .hpv-dropdown .optgroup + ul {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 1000px;
+            opacity: 1;
+            overflow: hidden;
+        }
+        .hpv-dropdown .optgroup.collapsed + ul {
+            max-height: 0;
+            opacity: 0;
+        }
+        .hpv-dropdown .select-all-group {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #2196F3;
+            font-size: 12px;
+            visibility: hidden;
+        }
+        .hpv-dropdown .hpv-dropdown-btn-group button {
+            background: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+        .hpv-dropdown .hpv-dropdown-btn-group button:disabled {
+            cursor: default;
+            border-width: thin;
+        }
+        .hpv-dropdown .hpv-dropdown-btn-group button:not([disabled]) {
+            border: 1px solid #2196F3;
+            color: #2196F3;
+        }
+        .hpv-dropdown .hpv-dropdown-btn-group .select-all-main:not([disabled]):hover {
+            background-color: #2196F3;
+            color: white;
+        }
+        .hpv-dropdown .excluded-item {
+            text-decoration: line-through;
+            font-weight: bold;
+            color: red;
+        }
+        .hpv-dropdown-btn-group .exclusion-mode-toggle.exclusion-active:not([disabled]) {
+            color:red;
+            border: 1px solid red;
+        }
+        .hpv-dropdown-btn-group .exclusion-mode-toggle:not(.exclusion-active):not([disabled]) {
+            color: #31d131;
+            border: 1px solid #31d131;
+        }
+        .hpv-dropdown-btn-group {
+            display: flex;
+            justify-content: flex-start;
+            gap: 20px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+    </style>
+</head>
+<body>
+   <div id="dropdown1" class="hpv-dropdown">
+       <div class="search-container">
+           <input type="text" class="search-input" placeholder="Search options...">
+           <button class="clear-search">&times;</button>
+       </div>
+       <div id="checkboxSecondaryContainer">
+           <div class="hpv-dropdown-btn-group">
+                <button class="select-all-main">Select All Visible</button>
+           </div>
+           <div class="checkbox-list">
+               <div class="optgroup">
+                    <span>Fruits</span>
+                    <button class="select-all-group">Select All</button>
+                </div>
+                <ul>
+                    <li>
+                        <input type="checkbox" id="apple" name="apple">
+                        <label for="apple">Apple</label>
+                    </li>
+                    <li class="hpv-dropdown-disabled">
+                        <input type="checkbox" id="banana" name="banana" disabled="disabled">
+                        <label for="banana">Banana</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="cherry" name="cherry">
+                        <label for="cherry">Cherry</label>
+                    </li>
+                </ul>
+                <div class="optgroup">
+                    <span>Vegetables</span>
+                    <button class="select-all-group">Select All</button>
+                </div>
+                <ul>
+                    <li>
+                        <input type="checkbox" id="carrot" name="carrot">
+                        <label for="carrot">Carrot</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="broccoli" name="broccoli">
+                        <label for="broccoli">Broccoli</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="spinach" name="spinach">
+                        <label for="spinach">Spinach</label>
+                    </li>
+                </ul>
+                <div class="optgroup">
+                    <span>Cars</span>
+                    <button class="select-all-group">Select All</button>
+                </div>
+                <ul>
+                    <li>
+                        <input type="checkbox" id="gol-gti" name="carrot">
+                        <label for="gol-gti">Gol GTi 1.0</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="fiat-palio" name="broccoli">
+                        <label for="fiat-palio">Fiat Palio V8</label>
+                    </li>
+                    <li>
+                        <input type="checkbox" id="camaro" name="spinach">
+                        <label for="camaro">Camaro Bubblebee</label>
+                    </li>
+                </ul>
+           </div>
+       </div>
+   </div>
+
+   <div style="display: flex;flex-direction: column;padding-top:50px;">
+    <span>Max Nr of items</span>
+    <span>Enable/disable exclusion mode</span>
+    <span>Add/remove items after init</span>
+    <span>Remove from list after click</span>
+    <span>Not mandatory optgroups</span>
+    <span>virtualscroll</span>
+    <span>remote list</span>
+    <span>focus search-input</span>
+    <span>custom render list item</span>
+    <span>List from js model</span>
+   </div>
+
+   <script>
+class HpvDropDown {
+    constructor(containerId, options = {}) {
+        this.defaultOptions = {
+            searchPlaceholder: "Search options...",
+            selectAllMainText: "Select All Visible",
+            selectAllGroupText: "Select All",
+            clearSearchTooltip: "Clear Search",
+            inclusionText: "Include in query",
+            exclusionText: "Exclude from query",
+            useFuseSearch: true,
+            selectMode: 'multiple',
+            maxSelectableItemsInclusionMode: 1000,
+            maxSelectableItemsExclusionMode: 1000,
+            onSelect: null,
+            onDeselect: null,
+            onSelectAll: null,
+            onDeselectAll: null,
+            onSelectGroup: null,
+            onDeselectGroup: null,
+            onCollapseGroup: null,
+            onExpandGroup: null,
+            onSearch: null,
+            onClearSearch: null,
+            onExclusionModeChange: null
+        };
+
+        this.options = { ...this.defaultOptions, ...options };
+        this.container = document.getElementById(containerId);
+        this.disabledClass = 'hpv-dropdown-disabled';
+        this.exclusionMode = false;
+        this.items = new Map(); // Store all items with their states
+
+        this.init();
+    }
+
+    init() {
+        this.setupInitialItemStates();
+        this.setupDOM();
+        this.setupEventListeners();
+        this.updateItemStates();
+    }
+
+    setupInitialItemStates() {
+        const checkboxes = this.container.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            const id = checkbox.id;
+            const label = checkbox.nextElementSibling.textContent;
+            const value = checkbox.value;
+            this.items.set(id, {
+                value,
+                label,
+                checkedInclusion: false,
+                checkedExclusion: false,
+                disabled: checkbox.disabled,
+                visible: true
+            });
+        });
+
+        console.log(this.items);
+    }
+
+    setupDOM() {
+        const searchInput = this.container.querySelector('.search-input');
+        searchInput.placeholder = this.options.searchPlaceholder;
+
+        const selectAllMain = this.container.querySelector('.select-all-main');
+        selectAllMain.textContent = this.options.selectAllMainText;
+
+        const selectAllGroups = this.container.querySelectorAll('.select-all-group');
+        selectAllGroups.forEach(btn => {
+            btn.textContent = this.options.selectAllGroupText;
+        });
+
+        const clearSearch = this.container.querySelector('.clear-search');
+        clearSearch.title = this.options.clearSearchTooltip;
+
+        this.setupExclusionModeToggle();
+    }
+
+    setupEventListeners() {
+        this.setupSearch();
+        this.setupCollapsibleOptgroups();
+        this.setupSelectAllButtons();
+        this.setupClickableListItems();
+        this.setupClearSearchButton();
+        this.setupCheckboxes();
+    }
+
+    setupExclusionModeToggle() {
+        const toggleButton = document.createElement('button');
+        toggleButton.className = 'exclusion-mode-toggle';
+        toggleButton.innerHTML = this.exclusionMode ? this.options.exclusionText : this.options.inclusionText;
+        
+        toggleButton.addEventListener('click', () => {
+            this.exclusionMode = !this.exclusionMode;
+            toggleButton.innerHTML = this.exclusionMode ? this.options.exclusionText : this.options.inclusionText;
+            this.updateItemStates();
+            
+            if (this.options.onExclusionModeChange) {
+                this.options.onExclusionModeChange(this.exclusionMode, this.getSelectedItems());
+            }
+        });
+
+        this.container.querySelector('.hpv-dropdown-btn-group').appendChild(toggleButton);
+    }
+
+    updateItemStates() {
+        this.items.forEach((item, id) => {
+            const checkbox = this.container.querySelector(`#${id}`);
+            const label = checkbox.nextElementSibling;
+
+            checkbox.checked = this.exclusionMode ? item.checkedExclusion : item.checkedInclusion;
+            checkbox.disabled = this.exclusionMode ? item.checkedInclusion : item.checkedExclusion;
+
+            label.classList.toggle('excluded-item', this.exclusionMode && item.checkedExclusion);
+            checkbox.closest('li').classList.toggle(this.disabledClass, checkbox.disabled);
+
+            // Update data attributes
+            checkbox.setAttribute('data-checked-inclusion', item.checkedInclusion ? '1' : '0');
+            checkbox.setAttribute('data-checked-exclusion', item.checkedExclusion ? '1' : '0');
+            checkbox.setAttribute('data-checkable-inclusion', item.checkedExclusion ? '0' : '1');
+            checkbox.setAttribute('data-checkable-exclusion', item.checkedInclusion ? '0' : '1');
+        });
+
+        this.updateSelectAllButtonStates();
+    }
+
+    updateSelectAllButtonStates() {
+        const visibleItems = Array.from(this.items.values()).filter(item => item.visible);
+        const allChecked = visibleItems.every(item => this.exclusionMode ? item.checkedExclusion : item.checkedInclusion);
+        
+        const selectAllMain = this.container.querySelector('.select-all-main');
+        selectAllMain.disabled = allChecked;
+
+        const selectAllGroups = this.container.querySelectorAll('.select-all-group');
+        selectAllGroups.forEach(btn => {
+            const group = btn.closest('.optgroup');
+            const groupItems = this.getGroupItems(group);
+            const allGroupChecked = groupItems.every(item => this.exclusionMode ? item.checkedExclusion : item.checkedInclusion);
+            btn.disabled = allGroupChecked;
+            btn.style.visibility = 'visible'; // Make sure the button is always visible
+        });
+    }
+
+    getGroupItems(group) {
+        const groupItemIds = Array.from(group.nextElementSibling.querySelectorAll('input[type="checkbox"]'))
+            .map(checkbox => checkbox.id);
+        return groupItemIds
+            .map(id => {
+                const item = this.items.get(id);
+                return item ? {...item, id} : null;
+            })
+            .filter(item => item && item.visible);
+    }
+
+    setupSearch() {
+        const searchInput = this.container.querySelector('.search-input');
+        const items = Array.from(this.container.querySelectorAll('li'));
+        const optgroups = Array.from(this.container.querySelectorAll('.optgroup'));
+
+        if (this.options.useFuseSearch) {
+            this.setupFuseSearch(searchInput, items, optgroups);
+        } else {
+            this.setupStandardSearch(searchInput, items, optgroups);
+        }
+    }
+
+     setupFuseSearch(searchInput, items, optgroups) {
+        const fuseOptions = {
+            keys: ['text'],
+            threshold: 0.3
+        };
+
+        const itemsFuse = new Fuse(items.map(item => ({
+            text: item.querySelector('label').textContent,
+            element: item
+        })), fuseOptions);
+
+        const optgroupsFuse = new Fuse(optgroups.map(group => ({
+            text: group.querySelector('span').textContent,
+            element: group
+        })), fuseOptions);
+
+        searchInput.addEventListener('input', () => {
+            this.performSearch(searchInput.value, items, optgroups, itemsFuse, optgroupsFuse);
+            if (this.options.onSearch) {
+                this.options.onSearch(searchInput.value);
+            }
+        });
+    }
+
+    setupStandardSearch(searchInput, items, optgroups) {
+        searchInput.addEventListener('input', () => {
+            this.performSearch(searchInput.value, items, optgroups);
+            if (this.options.onSearch) {
+                this.options.onSearch(searchInput.value);
+            }
+        });
+    }
+
+    performSearch(filter, items, optgroups, itemsFuse, optgroupsFuse) {
+        let visibleItemsInGroup = new Map();
+
+        items.forEach(item => item.style.display = 'none');
+        optgroups.forEach(group => {
+            group.style.display = 'none';
+            group.classList.remove('collapsed');
+        });
+
+        if (filter) {
+            if (this.options.useFuseSearch) {
+                this.fuseSearch(filter, items, optgroups, itemsFuse, optgroupsFuse, visibleItemsInGroup);
+            } else {
+                this.standardSearch(filter, items, optgroups, visibleItemsInGroup);
+            }
+        } else {
+            items.forEach(item => item.style.display = '');
+            optgroups.forEach(group => group.style.display = '');
+        }
+
+        optgroups.forEach(group => {
+            if (visibleItemsInGroup.get(group) > 0) {
+                group.style.display = '';
+                group.classList.remove('collapsed');
+                const ul = group.nextElementSibling;
+                if (ul.tagName.toLowerCase() === 'ul') {
+                    ul.style.display = ''; // Ensure the ul is visible
+                }
+            }
+        });
+
+        this.updateSelectAllButtonsVisibility();
+
+        if (this.options.onSearch) {
+            this.options.onSearch(filter, this.getSelectedItems());
+        }
+
+        this.updateItemStates();
+    }
+
+    setupCollapsibleOptgroups() {
+        const optgroups = this.container.querySelectorAll('.optgroup');
+        for (let group of optgroups) {
+            group.addEventListener('click', (e) => {
+                if (e.target.tagName.toLowerCase() === 'button') return;
+                const isCollapsing = !group.classList.contains('collapsed');
+                group.classList.toggle('collapsed');
+                const ul = group.nextElementSibling;
+                if (ul.tagName.toLowerCase() === 'ul') {
+                    ul.style.display = isCollapsing ? 'none' : '';
+                }
+                const selectAllBtn = group.querySelector('.select-all-group');
+                selectAllBtn.style.visibility = isCollapsing ? 'hidden' : 'visible';
+
+                if (isCollapsing && this.options.onCollapseGroup) {
+                    this.options.onCollapseGroup(group);
+                } else if (!isCollapsing && this.options.onExpandGroup) {
+                    this.options.onExpandGroup(group);
+                }
+            });
+        }
+    }
+
+    setupSelectAllButtons() {
+        this.container.addEventListener('click', (e) => {
+            if (e.target.classList.contains('select-all-group')) {
+                this.selectAllGroup(e.target);
+            } else if (e.target.classList.contains('select-all-main')) {
+                this.selectAllMain();
+            }
+        });
+    }
+
+    setupClickableListItems() {
+        const listItems = this.container.querySelectorAll('li');
+        listItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (e.target.tagName.toLowerCase() !== 'input') {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (!checkbox.disabled) {
+                        this.toggleItemSelection(checkbox.id);
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+    }
+
+    setupCheckboxes() {
+        const checkboxes = this.container.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.toggleItemSelection(checkbox.id);
+            });
+        });
+    }
+
+    toggleItemSelection(id) {
+        const item = this.items.get(id);
+        if (!item) return;
+
+        if (this.exclusionMode) {
+            item.checkedExclusion = !item.checkedExclusion;
+        } else {
+            item.checkedInclusion = !item.checkedInclusion;
+        }
+
+        if (this.options.selectMode === 'single') {
+            this.items.forEach((otherItem, otherId) => {
+                if (otherId !== id) {
+                    if (this.exclusionMode) {
+                        otherItem.checkedExclusion = false;
+                    } else {
+                        otherItem.checkedInclusion = false;
+                    }
+                }
+            });
+        }
+
+        this.updateItemStates();
+
+        const isChecked = this.exclusionMode ? item.checkedExclusion : item.checkedInclusion;
+        if (isChecked && this.options.onSelect) {
+            this.options.onSelect(id, this.getSelectedItems());
+        } else if (!isChecked && this.options.onDeselect) {
+            this.options.onDeselect(id, this.getSelectedItems());
+        }
+    }
+
+    selectAllGroup(button) {
+        if (this.options.selectMode === 'single') return;
+
+        const group = button.closest('.optgroup');
+        const groupItems = this.getGroupItems(group);
+        const allChecked = groupItems.every(item => this.exclusionMode ? item.checkedExclusion : item.checkedInclusion);
+
+        groupItems.forEach(item => {
+            if (this.exclusionMode) {
+                item.checkedExclusion = !allChecked;
+            } else {
+                item.checkedInclusion = !allChecked;
+            }
+            this.items.set(item.id, item);
+        });
+
+        this.updateItemStates();
+
+        if (!allChecked && this.options.onSelectGroup) {
+            this.options.onSelectGroup(group.textContent.trim(), groupItems.map(item => item.id), this.getSelectedItems());
+        } else if (allChecked && this.options.onDeselectGroup) {
+            this.options.onDeselectGroup(group.textContent.trim(), groupItems.map(item => item.id), this.getSelectedItems());
+        }
+    }
+
+    selectAllMain() {
+        if (this.options.selectMode === 'single') return;
+
+        const visibleItems = Array.from(this.items.entries())
+            .filter(([_, item]) => item.visible)
+            .map(([id, item]) => ({id, ...item}));
+
+        const allChecked = visibleItems.every(item => this.exclusionMode ? item.checkedExclusion : item.checkedInclusion);
+
+        visibleItems.forEach(item => {
+            if (this.exclusionMode) {
+                item.checkedExclusion = !allChecked;
+            } else {
+                item.checkedInclusion = !allChecked;
+            }
+            this.items.set(item.id, item);
+        });
+
+        this.updateItemStates();
+
+        if (!allChecked && this.options.onSelectAll) {
+            this.options.onSelectAll(visibleItems.map(item => item.id), this.getSelectedItems());
+        } else if (allChecked && this.options.onDeselectAll) {
+            this.options.onDeselectAll(visibleItems.map(item => item.id), this.getSelectedItems());
+        }
+    }
+
+    setupClearSearchButton() {
+        const clearButton = this.container.querySelector('.clear-search');
+        clearButton.addEventListener('click', () => this.clearSearch());
+    }
+
+    clearSearch() {
+        const searchInput = this.container.querySelector('.search-input');
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+        if (this.options.onClearSearch) {
+            this.options.onClearSearch(this.getSelectedItems());
+        }
+    }
+
+    getSelectedItems() {
+        return Array.from(this.items.entries())
+            .filter(([_, item]) => this.exclusionMode ? item.checkedExclusion : item.checkedInclusion)
+            .map(([id, item]) => ({
+                id,
+                value: item.value,
+                label: item.label,
+                excluded: this.exclusionMode
+            }));
+    }
+
+    selectById(id, selected = true) {
+        const item = this.items.get(id);
+        if (item) {
+            if (this.exclusionMode) {
+                item.checkedExclusion = selected;
+            } else {
+                item.checkedInclusion = selected;
+            }
+            this.updateItemStates();
+            
+            if (this.options.onSelect) {
+                this.options.onSelect(this.getSelectedItems());
+            }
+        } else {
+            console.warn(`Item with id "${id}" not found`);
+        }
+    }
+
+    getSelectedIds() {
+        return Array.from(this.items.entries())
+            .filter(([_, item]) => this.exclusionMode ? item.checkedExclusion : item.checkedInclusion)
+            .map(([id, _]) => id);
+    }
+};
+
+var scope = {};
+document.addEventListener('DOMContentLoaded', () => {
+     const dropdown1 = new HpvDropDown('dropdown1', {
+        searchPlaceholder: "Buscar por...",
+        selectAllMainText: "Selec. Todos Visíveis",
+        selectAllGroupText: "Selec. Grupo",
+        clearSearchTooltip: "Limpar a Busca",
+        inclusionText: "Modo: <b>Inclusão</b>",
+        exclusionText: "Modo: <b>Exclusão</b>",
+        useFuseSearch: true, // Set to false to use standard search
+        selectMode: 'multiple', // 'single' or 'multiple'
+        maxSelectableItemsInclusionMode: 1000,  // New option
+        maxSelectableItemsExclusionMode: 1000,  // New option
+        onSelect: (checkbox, previousSelected) => console.log('Selected:', checkbox, 'Previous:', previousSelected),
+        onDeselect: (checkbox, previousSelected) => console.log('Deselected:', checkbox, 'Previous:', previousSelected),
+        onSelectAll: (checkboxes, previousSelected) => console.log('Selected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
+        onDeselectAll: (checkboxes, previousSelected) => console.log('Deselected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
+        onSelectGroup: (group, checkboxes, previousSelected) => console.log('Selected group:', group.textContent, checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
+        onDeselectGroup: (group, checkboxes, previousSelected) => console.log('Deselected group:', group.textContent, checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
+        onCollapseGroup: (group) => console.log('Collapsed group:', group.textContent),
+        onExpandGroup: (group) => console.log('Expanded group:', group.textContent),
+        onSearch: (searchTerm) => console.log('Searched for:', searchTerm),
+        onClearSearch: () => console.log('Search cleared')
+    });
+
+    scope.dropdown1 = dropdown1;
+
+    console.log('Dropdown 1 selected items:', dropdown1.getSelectedItems());
+    // console.log('Dropdown 2 selected items:', dropdown2.getSelectedItems());
+
+    // Example usage:
+    dropdown1.selectById('apple', true);
+    // dropdown2.selectById('carrot', true);
+
+    console.log('Dropdown 1 selected IDs:', dropdown1.getSelectedIds());
+    // console.log('Dropdown 2 selected IDs:', dropdown2.getSelectedIds());
+});
+
+// Example usage:
+// HpvDropDown.selectById('apple', true);
+// console.log(HpvDropDown.getSelectedIds('dropdown1'));
+   </script>
+</body>
+</html>
