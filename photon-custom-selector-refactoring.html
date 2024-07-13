@@ -236,16 +236,13 @@ class HpvDropDown {
         this.containerId = containerId;
         this.items = new Map(); // Store all items { id, el, internal } with their states
 
-        this.init();
-    }
-
-    init() {
         // define working mode
         this.setCurrentMode( this.options.defaultMode );
-        // create search input and buttons
-        this.createDropdownElements();
-        // event listener for core elements
-        this.setupBasicEventListeners();        
+
+         // Initialize sub-modules
+         this.ui = new UIModule(this);
+         this.search = new SearchModule(this);
+         // this.items = new ItemsModule(this);
     }
 
     setCurrentMode( mode ) {
@@ -262,30 +259,6 @@ class HpvDropDown {
         this.setCurrentMode( this.currentModeIsExclusion ? this.MODE_INCLUSION : this.MODE_EXCLUSION );
     }
 
-    createDropdownElements() {
-        // set class hpv-dropdown to this.container
-        this.container.classList.add('hpv-dropdown');
-
-        const dropdownHTML = `
-            <div class="search-container">
-                <input type="text" class="search-input" placeholder="${this.options.searchPlaceholder}">
-                <button class="clear-search" title="${this.options.clearSearchTooltip}">&times;</button>
-            </div>
-            <div class="hpv-dropdown-content">
-                <div class="hpv-dropdown-btn-group">
-                    <button class="select-all-main">${this.options.selectAllMainText}</button>
-                </div>
-                <div class="hpv-dropdown-status-container">
-                    <span>${this.options.emptyText}</span>    
-                </div>
-                <div class="hpv-dropdown-checkbox-list"></div>
-            </div>
-        `;
-
-        // Append the HTML to the desired parent element
-        this.container.innerHTML += dropdownHTML;
-    }
-
     showEmptyStatus() {
         this.showCustomStatus(this.options.emptyText);
     }
@@ -300,7 +273,7 @@ class HpvDropDown {
         this.container.querySelector('.hpv-dropdown-status-container').style.display = 'none';
     }
 
-    afterChangeItems() {
+    afterAddOrRemoveItems() {
         if ( this.items.size == 0 ) {
             this.showCustomStatus(this.options.emptyText);
         } else {
@@ -318,7 +291,7 @@ class HpvDropDown {
             this.addItem(item, false);
         });
 
-        this.afterChangeItems();
+        this.afterAddOrRemoveItems();
     }
 
     addItem(item, fireAfterChange = true) {
@@ -345,7 +318,7 @@ class HpvDropDown {
         });
 
         if ( fireAfterChange ) {
-            this.afterChangeItems();
+            this.afterAddOrRemoveItems();
         }
     }
 
@@ -355,12 +328,12 @@ class HpvDropDown {
         this.setupItemsEventListeners();
         this.updateItemStates();
 
-        this.afterChangeItems();
+        this.afterAddOrRemoveItems();
     }
     
     checkItem(id, mode, check = true) {
         const item = this.items.get(id);
-        // Do not allow to uncheck disabled items
+        // Do not allow to change disabled items
         if ( item.nativeDisabled ) return;
 
         if (item) {
@@ -423,42 +396,6 @@ class HpvDropDown {
             });
             checkboxList.appendChild(ul);
         }
-    }
-
-    // create inclusion/exclusion mode toggle button
-    setupExclusionModeToggle() {
-        const toggleButton = document.createElement('button');
-        toggleButton.className = 'exclusion-mode-toggle';
-        toggleButton.innerHTML = this.currentModeIsExclusion ? this.options.exclusionText : this.options.inclusionText;
-        
-        toggleButton.addEventListener('click', () => {
-            this.toogleCurrentMode();
-            // toggle class .exclusion-active
-            toggleButton.classList.toggle('exclusion-active');
-            toggleButton.innerHTML = this.currentModeIsExclusion ? this.options.exclusionText : this.options.inclusionText;
-            // update item states based on mode
-            this.updateItemStates();
-            
-            // do callback
-            if (this.options.onExclusionModeChange) {
-                this.options.onExclusionModeChange(this.currentModeIsExclusion, this.getSelectedItems());
-            }
-        });
-        
-        // add new button
-        this.container.querySelector('.hpv-dropdown-btn-group').appendChild(toggleButton);
-    }
-
-    setupSearchInputShortcut() {
-        const searchInput = this.container.querySelector('.search-input');
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.shiftKey) {
-                e.preventDefault();
-                this.selectAllMain();
-                // clear input
-                this.clearSearch();
-            }
-        });
     }
 
     // refresh list state
@@ -525,26 +462,14 @@ class HpvDropDown {
                 this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion
             );
             
-            selectAllGroup.disabled = allGroupChecked || groupItems.length === 0;
+            //selectAllGroup.disabled = allGroupChecked || groupItems.length === 0;
             selectAllGroup.style.visibility = (this.options.selectMode !== 'single' && groupItems.length > 0) ? 'visible' : 'hidden';
         });
-    }
-
-    setupBasicEventListeners() {
-        this.setupSearchEventListener();
-        this.setupClearSearchButton();
-        this.setupSelectAllButtons();
-
-        // create inclusion/exclusion mode toggle button
-        this.setupExclusionModeToggle();
-        // shortcut to select
-        this.setupSearchInputShortcut();
     }
 
     setupItemsEventListeners() {
         this.setupCollapsibleOptgroups();
         this.setupClickableListItems();
-        this.setupClearSearchButton();
         this.setupCheckboxes();
     }
 
@@ -559,56 +484,9 @@ class HpvDropDown {
         return groups;
     }
 
-    setupSearchEventListener() {
-        const searchInput = this.container.querySelector('.search-input');
-        searchInput.addEventListener('input', () => this.performSearch(searchInput.value));
-    }
-
     itemMatchesFilter(item, lowerFilter) {
         return item.label.toLowerCase().includes(lowerFilter) || 
             item.optgroup.toLowerCase().includes(lowerFilter);
-    }
-
-    performSearch(filter) {
-        const lowerFilter = filter.toLowerCase();
-        const optgroups = this.container.querySelectorAll('.optgroup');
-        let visibleItemsCount = 0;
-
-        this.items.forEach((item, id) => {
-            const visible = this.itemMatchesFilter(item, lowerFilter);
-            this.setItemVisibility(id, visible);
-            if (visible) visibleItemsCount++;
-        });
-
-        optgroups.forEach(group => {
-            const groupName = group.getAttribute('group-name');
-            const groupItems = this.getGroupItems(group);
-            const visibleGroupItems = groupItems.filter(item => item.visible);
-            
-            if (visibleGroupItems.length > 0 || group.querySelector('span').textContent.toLowerCase().includes(lowerFilter)) {
-                group.style.display = '';
-                group.classList.remove('collapsed');
-                const ul = group.nextElementSibling;
-                if (ul && ul.tagName.toLowerCase() === 'ul') {
-                    ul.style.display = '';
-                }
-            } else {
-                group.style.display = 'none';
-            }
-        });
-
-        if (visibleItemsCount === 0) {
-            this.showEmptyStatus();
-        } else {
-            this.hideStatus();
-        }
-
-        if (this.options.onSearch) {
-            this.options.onSearch(filter, this.getSelectedItems());
-        }
-
-        this.updateItemStates();
-        this.updateSelectAllButtonStates();
     }
 
     setupCollapsibleOptgroups() {
@@ -632,16 +510,6 @@ class HpvDropDown {
                 }
             });
         }
-    }
-
-    setupSelectAllButtons() {
-        this.container.addEventListener('click', (e) => {
-            if (e.target.classList.contains('select-all-group')) {
-                this.selectAllGroup(e.target);
-            } else if (e.target.classList.contains('select-all-main')) {
-                this.selectAllMain();
-            }
-        });
     }
 
     setupClickableListItems() {
@@ -777,20 +645,6 @@ class HpvDropDown {
         }
     }
 
-    setupClearSearchButton() {
-        const clearButton = this.container.querySelector('.clear-search');
-        clearButton.addEventListener('click', () => this.clearSearch());
-    }
-
-    clearSearch() {
-        const searchInput = this.container.querySelector('.search-input');
-        searchInput.value = '';
-        searchInput.dispatchEvent(new Event('input'));
-        if (this.options.onClearSearch) {
-            this.options.onClearSearch(this.getSelectedItems());
-        }
-    }
-
     getSelectedItems() {
         return Array.from(this.items.entries())
             .filter(([_, item]) => this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion)
@@ -806,6 +660,159 @@ class HpvDropDown {
         return Array.from(this.items.entries())
             .filter(([_, item]) => this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion)
             .map(([id, _]) => id);
+    }
+};
+
+class SearchModule {
+    constructor(dropdown) {
+        this.dropdown = dropdown;
+        this.setupSearchInput();
+        this.setupClearSearchButton();
+        this.setupSearchInputShortcut();
+    }
+
+    setupSearchInput() {
+        const searchInput = this.dropdown.container.querySelector('.search-input');
+        searchInput.addEventListener('input', () => this.performSearch(searchInput.value));
+    }
+
+    setupClearSearchButton() {
+        const clearButton = this.dropdown.container.querySelector('.clear-search');
+        clearButton.addEventListener('click', () => this.clearSearch());
+    }
+
+    setupSearchInputShortcut() {
+        const searchInput = this.dropdown.container.querySelector('.search-input');
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault();
+                this.dropdown.selectAllMain();
+                // clear input
+                this.clearSearch();
+            }
+        });
+    }
+
+    clearSearch() {
+        const searchInput = this.dropdown.container.querySelector('.search-input');
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+        if (this.dropdown.options.onClearSearch) {
+            this.dropdown.options.onClearSearch(this.dropdown.getSelectedItems());
+        }
+    }
+
+    performSearch(filter) {
+        const lowerFilter = filter.toLowerCase();
+        const optgroups = this.dropdown.container.querySelectorAll('.optgroup');
+        let visibleItemsCount = 0;
+
+        this.dropdown.items.forEach((item, id) => {
+            const visible = this.dropdown.itemMatchesFilter(item, lowerFilter);
+            this.dropdown.setItemVisibility(id, visible);
+            if (visible) visibleItemsCount++;
+        });
+
+        optgroups.forEach(group => {
+            const groupName = group.getAttribute('group-name');
+            const groupItems = this.dropdown.getGroupItems(group);
+            const visibleGroupItems = groupItems.filter(item => item.visible);
+            
+            if (visibleGroupItems.length > 0 || group.querySelector('span').textContent.toLowerCase().includes(lowerFilter)) {
+                group.style.display = '';
+                group.classList.remove('collapsed');
+                const ul = group.nextElementSibling;
+                if (ul && ul.tagName.toLowerCase() === 'ul') {
+                    ul.style.display = '';
+                }
+            } else {
+                group.style.display = 'none';
+            }
+        });
+
+        if (visibleItemsCount === 0) {
+            this.dropdown.showEmptyStatus();
+        } else {
+            this.dropdown.hideStatus();
+        }
+
+        if (this.dropdown.options.onSearch) {
+            this.dropdown.options.onSearch(filter, this.dropdown.getSelectedItems());
+        }
+
+        // this.updateItemStates();
+        // this.updateSelectAllButtonStates();
+    }
+
+    // ... (other search-related methods)
+};
+
+class UIModule {
+    constructor(dropdown) {
+        this.dropdown = dropdown;
+        this.createDropdownContainer();
+        // select all button and group buttons ( by Event Target )
+        this.setupSelectAllButtons();
+        // create inclusion/exclusion mode toggle button
+        this.setupExclusionModeToggle();
+    }
+
+    setupSelectAllButtons() {
+        this.dropdown.container.addEventListener('click', (e) => {
+            if (e.target.classList.contains('select-all-group')) {
+                this.dropdown.selectAllGroup(e.target);
+            } else if (e.target.classList.contains('select-all-main')) {
+                this.dropdown.selectAllMain();
+            }
+        });
+    }
+
+    // create inclusion/exclusion mode toggle button
+    setupExclusionModeToggle() {
+        const toggleButton = document.createElement('button');
+        toggleButton.className = 'exclusion-mode-toggle';
+        toggleButton.innerHTML = this.dropdown.currentModeIsExclusion ? this.dropdown.options.exclusionText : this.dropdown.options.inclusionText;
+        
+        toggleButton.addEventListener('click', () => {
+            this.toogleCurrentMode();
+            // toggle class .exclusion-active
+            toggleButton.classList.toggle('exclusion-active');
+            toggleButton.innerHTML = this.dropdown.currentModeIsExclusion ? this.dropdown.options.exclusionText : this.dropdown.options.inclusionText;
+            // update item states based on mode
+            this.updateItemStates();
+            
+            // do callback
+            if (this.dropdown.options.onExclusionModeChange) {
+                this.dropdown.options.onExclusionModeChange(this.dropdown.currentModeIsExclusion, this.dropdown.getSelectedItems());
+            }
+        });
+        
+        // add new button
+        this.dropdown.container.querySelector('.hpv-dropdown-btn-group').appendChild(toggleButton);
+    }
+
+    createDropdownContainer() {
+        // set class hpv-dropdown to this.container
+        this.dropdown.container.classList.add('hpv-dropdown');
+
+        const dropdownHTML = `
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="${this.dropdown.options.searchPlaceholder}">
+                <button class="clear-search" title="${this.dropdown.options.clearSearchTooltip}">&times;</button>
+            </div>
+            <div class="hpv-dropdown-content">
+                <div class="hpv-dropdown-btn-group">
+                    <button class="select-all-main">${this.dropdown.options.selectAllMainText}</button>
+                </div>
+                <div class="hpv-dropdown-status-container">
+                    <span>${this.dropdown.options.emptyText}</span>    
+                </div>
+                <div class="hpv-dropdown-checkbox-list"></div>
+            </div>
+        `;
+
+        // Append the HTML to the desired parent element
+        this.dropdown.container.innerHTML += dropdownHTML;
     }
 };
 
