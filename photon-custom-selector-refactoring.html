@@ -235,9 +235,6 @@ class HpvCheckList {
             },
         };
 
-        this.MODE_EXCLUSION = 'exclusion';
-        this.MODE_INCLUSION = 'inclusion';
-
         this.options = { ...this.defaultOptions, ...options };
         this.container = document.getElementById(containerId);
         this.containerId = containerId;
@@ -251,16 +248,22 @@ class HpvCheckList {
         this.items = new ItemsModule(this);
     }
 
+    MODES = {
+        INCLUSION: 'inclusion',
+        EXCLUSION: 'exclusion'
+    }
+
+    // global proxy for modules
     addItems(userItems) {
         if (!userItems || Array.isArray(userItems) === false) {
             throw new HpvCheckListError('Invalid items format');
         }
 
         this.items.addMultiple(userItems);
-        // TODO, move to ui
-        this.afterAddOrRemoveItems();
+        this.ui.afterAddOrRemoveItems();
     }
 
+    // global proxy for modules
     addItem(item, fireAfterChange = true) {
         if (!item || typeof item !== 'object') {
             throw new HpvCheckListError('Invalid item format');
@@ -269,13 +272,12 @@ class HpvCheckList {
         this.items.add(item);
 
         if ( fireAfterChange ) {
-            // TODO, move to ui
-            this.afterAddOrRemoveItems();
+            this.ui.afterAddOrRemoveItems();
         }
     }
 
     setCurrentMode( mode ) {
-        if ( mode == this.MODE_EXCLUSION ) {
+        if ( mode == this.MODES.EXCLUSION ) {
             this.currentModeIsExclusion = true;
             this.currentModeIsInclusion = false;
         } else {
@@ -285,30 +287,17 @@ class HpvCheckList {
     }
 
     toogleCurrentMode() {
-        this.setCurrentMode( this.currentModeIsExclusion ? this.MODE_INCLUSION : this.MODE_EXCLUSION );
-    }
-
-    afterAddOrRemoveItems() {
-        if ( this.items.getSize() == 0 ) {
-            this.ui.showCustomStatus(this.options.emptyText);
-        } else {
-            this.ui.hideStatus();
-        }
-
-        // only when items are added after init
-        this.renderItems();
-        this.setupItemsEventListeners();
-        this.updateItemStates();
+        this.setCurrentMode( this.currentModeIsExclusion ? this.MODES.INCLUSION : this.MODES.EXCLUSION );
     }
 
     removeAllItems() {
         // we wont clear items, only delete el, keeping previous selected items on list
-        this.items.clear();
+        this.items.removeAll();
         this.renderItems();
         this.setupItemsEventListeners();
         this.updateItemStates();
 
-        this.afterAddOrRemoveItems();
+        this.ui.afterAddOrRemoveItems();
     }
     
     checkItem(id, mode, check = true) {
@@ -317,10 +306,10 @@ class HpvCheckList {
         if ( item.nativeDisabled ) return;
 
         if (item) {
-            if (mode === this.MODE_INCLUSION) {
+            if (mode === this.MODES.INCLUSION) {
                 item.checkedInclusion = check;
                 item.checkedExclusion = false;
-            } else if (mode === this.MODE_EXCLUSION) {
+            } else if (mode === this.MODES.EXCLUSION) {
                 item.checkedExclusion = check;
                 item.checkedInclusion = false;
             }
@@ -348,7 +337,7 @@ class HpvCheckList {
         const checkboxList = this.container.querySelector('.hpv-checklist-checkbox-list');
         checkboxList.innerHTML = '';
 
-        const groupedItems = this.groupItems();
+        const groupedItems = this.items.getGroupedItems();
 
         for (const [groupName, items] of Object.entries(groupedItems)) {
             const optgroup = document.createElement('div');
@@ -440,7 +429,7 @@ class HpvCheckList {
         const optgroups = this.container.querySelectorAll('.optgroup');
         optgroups.forEach(group => {
             const selectAllGroup = group.querySelector('.select-all-group');
-            const groupItems = this.getGroupItems(group).filter(item => item.visible);
+            const groupItems = this.getItemsByGroup(group).filter(item => item.visible);
             const allGroupChecked = groupItems.every(item => 
                 this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion
             );
@@ -454,17 +443,6 @@ class HpvCheckList {
         this.setupCollapsibleOptgroups();
         this.setupClickableListItems();
         this.setupCheckboxes();
-    }
-
-    groupItems() {
-        const groups = {};
-        this.items.items.forEach(item => {
-            if (!groups[item.optgroup]) {
-                groups[item.optgroup] = [];
-            }
-            groups[item.optgroup].push(item);
-        });
-        return groups;
     }
 
     itemMatchesFilter(item, lowerFilter) {
@@ -558,7 +536,7 @@ class HpvCheckList {
         }
     }
 
-    getGroupItems(group) {
+    getItemsByGroup(group) {
         // get attribute group-name
         const groupName = group.getAttribute('group-name');
 
@@ -570,7 +548,7 @@ class HpvCheckList {
         if (this.options.selectMode === 'single') return;
 
         const group = button.closest('.optgroup');
-        const groupItems = this.getGroupItems(group);
+        const groupItems = this.getItemsByGroup(group);
         const allChecked = groupItems.every((item) => {
             if ( item.nativeDisabled ) {
                 return true;
@@ -581,9 +559,9 @@ class HpvCheckList {
 
         groupItems.forEach(item => {
             if ( this.currentModeIsInclusion ) {
-                this.checkItem(item.key, this.MODE_INCLUSION, !allChecked);
+                this.checkItem(item.key, this.MODES.INCLUSION, !allChecked);
             } else {
-                this.checkItem(item.key, this.MODE_EXCLUSION, !allChecked);
+                this.checkItem(item.key, this.MODES.EXCLUSION, !allChecked);
             }
         });
 
@@ -615,9 +593,9 @@ class HpvCheckList {
             if ( item.nativeDisabled ) return;
 
             if (this.currentModeIsExclusion) {
-                this.checkItem(item.key, this.MODE_EXCLUSION, !allChecked);
+                this.checkItem(item.key, this.MODES.EXCLUSION, !allChecked);
             } else {
-                this.checkItem(item.key, this.MODE_INCLUSION, !allChecked);
+                this.checkItem(item.key, this.MODES.INCLUSION, !allChecked);
             }
         });
 
@@ -683,7 +661,7 @@ class ItemsModule {
         });
 
         if ( fireAfterChange ) {
-            this.parent.afterAddOrRemoveItems();
+            this.parent.ui.afterAddOrRemoveItems();
         }
     }
 
@@ -696,9 +674,22 @@ class ItemsModule {
         return false;
     }
 
-    removeAll() {
+    removeAll( keepSelectedStates = true ) {
         // NOTE: will we really remove all items or delete el from DOM?
         this.items.clear();
+    }
+
+    getGroupedItems() {
+        const groups = {};
+        
+        this.items.forEach(item => {
+            if (!groups[item.optgroup]) {
+                groups[item.optgroup] = [];
+            }
+            groups[item.optgroup].push(item);
+        });
+
+        return groups;
     }
 
     getSize() {
@@ -762,7 +753,7 @@ class SearchModule {
 
         optgroups.forEach(group => {
             const groupName = group.getAttribute('group-name');
-            const groupItems = this.parent.getGroupItems(group);
+            const groupItems = this.parent.getItemsByGroup(group);
             const visibleGroupItems = groupItems.filter(item => item.visible);
             
             if (visibleGroupItems.length > 0 || group.querySelector('span').textContent.toLowerCase().includes(lowerFilter)) {
@@ -806,6 +797,19 @@ class UIModule {
         this.setupSelectAllButtons();
         // create inclusion/exclusion mode toggle button
         this.setupExclusionModeToggle();
+    }
+
+    afterAddOrRemoveItems() {
+        if ( this.parent.items.getSize() == 0 ) {
+            this.showCustomStatus(this.options.emptyText);
+        } else {
+            this.hideStatus();
+        }
+
+        // only when items are added after init
+        this.parent.renderItems();
+        this.parent.setupItemsEventListeners();
+        this.parent.updateItemStates();
     }
 
     showEmptyStatus() {
