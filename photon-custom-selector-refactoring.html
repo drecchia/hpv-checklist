@@ -147,23 +147,10 @@
             justify-content: center;
             color: #a7a7a7;
         }
-        .hpv-checklist .excluded-item {
-            text-decoration: line-through;
-            font-weight: bold;
-            color: red;
-        }
         .hpv-checklist .hpv-checklist-disabled {
             color: #ccc;
         }
-        .hpv-checklist-btn-group .exclusion-mode-toggle.exclusion-active:not([disabled]) {
-            color:red;
-            border: 1px solid red;
-        }
-        .hpv-checklist-btn-group .exclusion-mode-toggle:not(.exclusion-active):not([disabled]) {
-            color: #31d131;
-            border: 1px solid #31d131;
-        }
-        .hpv-checklist-btn-group {
+        .hpv-checklist .hpv-checklist-btn-group {
             display: flex;
             justify-content: flex-start;
             gap: 20px;
@@ -274,10 +261,9 @@ class HpvCheckList {
             fieldMap: {
                 keyField: 'id',
                 labelField: 'label',
+                valueField: 'value',
                 optgroupField: 'optgroup',
                 disabledField: 'disabled',
-                checkedInclusionField: 'checked',
-                checkedExclusionField: null,
             },
         };
 
@@ -285,18 +271,10 @@ class HpvCheckList {
         this.container = document.getElementById(containerId);
         this.containerId = containerId;
 
-        // define working mode
-        this.setCurrentMode( this.options.defaultMode );
-
         // Initialize sub-modules
         this.ui = new UIModule(this);
         this.search = new SearchModule(this);
         this.items = new ItemsModule(this);
-    }
-
-    MODES = {
-        INCLUSION: 'inclusion',
-        EXCLUSION: 'exclusion'
     }
 
     // global proxy for modules
@@ -322,20 +300,6 @@ class HpvCheckList {
         }
     }
 
-    setCurrentMode( mode ) {
-        if ( mode == this.MODES.EXCLUSION ) {
-            this.currentModeIsExclusion = true;
-            this.currentModeIsInclusion = false;
-        } else {
-            this.currentModeIsExclusion = false;
-            this.currentModeIsInclusion = true;
-        }	
-    }
-
-    toogleCurrentMode() {
-        this.setCurrentMode( this.currentModeIsExclusion ? this.MODES.INCLUSION : this.MODES.EXCLUSION );
-    }
-
     removeAllItems() {
         // we wont clear items, only delete el, keeping previous selected items on list
         this.items.removeAll();
@@ -346,19 +310,13 @@ class HpvCheckList {
         this.ui.afterAddOrRemoveItems();
     }
     
-    checkItem(id, mode, check = true) {
+    checkItem(id, check = true) {
         const item = this.items.items.get(id);
         // Do not allow to change disabled items
         if ( item.nativeDisabled ) return;
 
         if (item) {
-            if (mode === this.MODES.INCLUSION) {
-                item.checkedInclusion = check;
-                item.checkedExclusion = false;
-            } else if (mode === this.MODES.EXCLUSION) {
-                item.checkedExclusion = check;
-                item.checkedInclusion = false;
-            }
+            item.value = check ? 1 : 0;
             this.items.items.set(id, item);
             // render items
             this.updateItemStates();
@@ -425,7 +383,7 @@ class HpvCheckList {
             const label = itemContainer.querySelector('.checkbox-label');
             const isNativeDisabled = item.nativeDisabled;
 
-            const isChecked = this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion;
+            const isChecked = item.value === 1;
             customCheckbox.setAttribute('data-checked', isChecked);
 
             if (isNativeDisabled) {
@@ -434,17 +392,15 @@ class HpvCheckList {
                 customCheckbox.removeAttribute('data-disabled');
             }
 
-            label.classList.toggle('excluded-item', this.currentModeIsExclusion && item.checkedExclusion);
-            itemContainer.classList.toggle(this.options.disabledClass, isNativeDisabled || (this.currentModeIsExclusion ? item.checkedInclusion : item.checkedExclusion));
+            itemContainer.classList.toggle(this.options.disabledClass, isNativeDisabled);
 
             if (customCheckbox.hasAttribute('data-disabled')) {
-                label.title = isNativeDisabled ? 'This item is disabled' : (this.currentModeIsExclusion ? 'Included in query' : 'Excluded from query');
+                label.title = isNativeDisabled ? 'This item is disabled' : '';
             } else {
                 label.title = '';
             }
 
-            item.checkableInclusion = !isNativeDisabled && !item.checkedExclusion;
-            item.checkableExclusion = !isNativeDisabled && !item.checkedInclusion;
+            item.checkable = !isNativeDisabled;
         });
 
         this.updateSelectAllButtonStates();
@@ -453,7 +409,7 @@ class HpvCheckList {
     updateSelectAllButtonStates() {
         const visibleItems = Array.from(this.items.items.values()).filter(item => item.visible);
         const allChecked = visibleItems.every(item => 
-            this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion
+            item.value > 0
         );
         
         // const selectAllMain = this.container.querySelector('.select-all-main');
@@ -464,7 +420,7 @@ class HpvCheckList {
             const selectAllGroup = group.querySelector('.select-all-group');
             const groupItems = this.getItemsByGroup(group).filter(item => item.visible);
             const allGroupChecked = groupItems.every(item => 
-                this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion
+                item.value > 0
             );
             
             //selectAllGroup.disabled = allGroupChecked || groupItems.length === 0;
@@ -520,36 +476,23 @@ class HpvCheckList {
 
     toggleItemSelection(id) {
         const item = this.items.items.get(id);
-        if (!item) return;
+        if (!item || !item.checkable) return;
 
-        if (this.currentModeIsExclusion) {
-            item.checkedExclusion = !item.checkedExclusion;
-        } else {
-            item.checkedInclusion = !item.checkedInclusion;
-        }
+        item.value = item.value === 1 ? 0 : 1;
 
         if (this.options.selectMode === 'single') {
             this.items.items.forEach((otherItem, otherId) => {
                 if (otherId !== id) {
-                    if (this.currentModeIsExclusion) {
-                        otherItem.checkedExclusion = false;
-                    } else {
-                        otherItem.checkedInclusion = false;
-                    }
+                    otherItem.value = 0;
                 }
             });
         }
 
         this.updateItemStates();
 
-        const isChecked = this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion;
-        const elContainer = item.el;
-        const customCheckbox = elContainer.querySelector('.custom-checkbox');
-        customCheckbox.setAttribute('data-checked', isChecked);
-
-        if (isChecked && this.options.onSelect) {
+        if (item.value === 1 && this.options.onSelect) {
             this.options.onSelect(id, this.items.getSelectedItems());
-        } else if (!isChecked && this.options.onDeselect) {
+        } else if (item.value === 0 && this.options.onDeselect) {
             this.options.onDeselect(id, this.items.getSelectedItems());
         }
     }
@@ -571,16 +514,12 @@ class HpvCheckList {
             if ( item.nativeDisabled ) {
                 return true;
             } else {
-                return this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion;
+                return item.value > 0;
             }
         });
 
         groupItems.forEach(item => {
-            if ( this.currentModeIsInclusion ) {
-                this.checkItem(item.key, this.MODES.INCLUSION, !allChecked);
-            } else {
-                this.checkItem(item.key, this.MODES.EXCLUSION, !allChecked);
-            }
+            this.checkItem(item.key, !allChecked);
         });
 
         if (!allChecked && this.options.onSelectGroup) {
@@ -602,7 +541,7 @@ class HpvCheckList {
             if ( item.nativeDisabled ) {
                 return true;
             } else {
-                return this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion;
+                return item.value > 0;
             }
         });
 
@@ -610,11 +549,7 @@ class HpvCheckList {
             // Do not allow to uncheck disabled items
             if ( item.nativeDisabled ) return;
 
-            if (this.currentModeIsExclusion) {
-                this.checkItem(item.key, this.MODES.EXCLUSION, !allChecked);
-            } else {
-                this.checkItem(item.key, this.MODES.INCLUSION, !allChecked);
-            }
+            this.checkItem(item.key, !allChecked);
         });
 
         if (!allChecked && this.options.onSelectAll) {
@@ -637,16 +572,16 @@ class ItemsModule {
 
     // to item module
     getSelectedItems() {
-        // list all entries from this.items where (item.checkedExclusion || item.checkedInclusion)
+        // list all entries from this.items where (item.value > 0)
         return Array.from(this.items.entries())
-            .filter(([_, item]) => this.parent.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion)
+            .filter(([_, item]) => item.value > 0)
             .map(([_, item]) => item);
     }
 
     // to item module
     getSelectedIds() {
         return Array.from(this.items.entries())
-            .filter(([_, item]) => this.parent.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion)
+            .filter(([_, item]) => item.value > 0)
             .map(([id, _]) => id);
     }
 
@@ -655,25 +590,21 @@ class ItemsModule {
     }
 
     add(item, fireAfterChange = true) {
-        const { keyField, labelField, optgroupField, disabledField, checkedInclusionField, checkedExclusionField } = this.parent.options.fieldMap;
+        const { keyField, labelField, valueField, disabledField, optgroupField } = this.parent.options.fieldMap;
 
         const key = item[keyField] + ''; // protection
         const label = item[labelField];
+        const value = item[valueField] || 0;
         const optgroup = item[optgroupField];
         const disabled = item[disabledField] || false;
-        const checkedInclusion = item[checkedInclusionField] || false;
-        const checkedExclusion = item[checkedExclusionField] || false;
 
         this.items.set(key, {
             key: key,
             label: label,
+            value: value,
             optgroup: optgroup,
             disabled: disabled,
-            checkedInclusion: checkedInclusion,
-            checkedExclusion: checkedExclusion,
             // internal
-            checkableInclusion: true,
-            checkableExclusion: true,
             nativeDisabled: disabled,
             visible: true,
         });
@@ -813,8 +744,6 @@ class UIModule {
         this.createDropdownContainer();
         // select all button and group buttons ( by Event Target )
         this.setupSelectAllButtons();
-        // create inclusion/exclusion mode toggle button
-        this.setupExclusionModeToggle();
     }
 
     afterAddOrRemoveItems() {
@@ -852,32 +781,6 @@ class UIModule {
                 this.parent.selectAllMain();
             }
         });
-    }
-
-    // create inclusion/exclusion mode toggle button
-    setupExclusionModeToggle() {
-        const { exclusionText, inclusionText } = this.parent.options;
-
-        const toggleButton = document.createElement('button');
-        toggleButton.className = 'exclusion-mode-toggle';
-        toggleButton.innerHTML = this.parent.currentModeIsExclusion ? exclusionText : inclusionText;
-        
-        toggleButton.addEventListener('click', () => {
-            this.parent.toogleCurrentMode();
-            // toggle class .exclusion-active
-            toggleButton.classList.toggle('exclusion-active');
-            toggleButton.innerHTML = this.parent.currentModeIsExclusion ? exclusionText : inclusionText;
-            // update item states based on mode
-            this.parent.updateItemStates();
-            
-            // do callback
-            if (this.parent.options.onExclusionModeChange) {
-                this.parent.options.onExclusionModeChange(this.parent.currentModeIsExclusion, this.parent.items.getSelectedItems());
-            }
-        });
-        
-        // add new button
-        this.parent.container.querySelector('.hpv-checklist-btn-group').appendChild(toggleButton);
     }
 
     createDropdownContainer() {
