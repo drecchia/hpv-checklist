@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HpvDropDown Component</title>
+    <title>HpvCheckList Component</title>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.basic.min.js" integrity="sha256-1C+i/jM9DOPZNpliy6HamyBeT7NAbYD8iRmcZ2bopmY=" crossorigin="anonymous"></script>
     <style>
         body {
@@ -11,18 +11,18 @@
             margin: 0 auto;
         }
         /*  THIS IS TEST ONLY  */
-        .hpv-dropdown {
+        .hpv-checklist {
             width: 400px;
             border-style: solid;
             border-width: thin;
             border-radius: 8px;
         }
-        .hpv-dropdown ul {
+        .hpv-checklist ul {
             list-style-type: none;
             padding: 0;
             margin: 0;
         }
-        .hpv-dropdown li {
+        .hpv-checklist li {
             color: #303438;
             padding: 5px 10px;
             font-size: 12px;
@@ -31,37 +31,37 @@
             font-weight: 400;
             cursor: pointer;
         }
-        .hpv-dropdown li:hover {
+        .hpv-checklist li:hover {
             background-color: #f3f3f3;
         }
-        .hpv-dropdown label {
+        .hpv-checklist label {
             display: inline-flex;
             align-items: center;
             cursor: pointer;
         }
-        .hpv-dropdown .hpv-dropdown-content {
+        .hpv-checklist .hpv-checklist-content {
             overflow-y: auto;
             padding-top: 10px;
         }
-        .hpv-dropdown #root-container {
+        .hpv-checklist #root-container {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
             flex-grow: 1;
             margin: 50px;
         }
-        .hpv-dropdown .search-container {
+        .hpv-checklist .search-container {
             position: relative;
             width: 100%;
         }
-        .hpv-dropdown .search-input {
+        .hpv-checklist .search-input {
             width: 100%;
             padding: 8px 30px 8px 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
         }
-        .hpv-dropdown .clear-search {
+        .hpv-checklist .clear-search {
             position: absolute;
             right: 10px;
             top: 25%;
@@ -76,10 +76,10 @@
             border-radius: 50%;
             width: 18px;
         }
-        .hpv-dropdown .clear-search:hover {
+        .hpv-checklist .clear-search:hover {
             background-color: #ffacac;
         }
-        .hpv-dropdown .optgroup {
+        .hpv-checklist .optgroup {
             font-weight: bold;
             user-select: none;
             display: flex;
@@ -94,26 +94,26 @@
             text-shadow: none;
             line-height: 20px;
         }
-        .hpv-dropdown .optgroup::before {
+        .hpv-checklist .optgroup::before {
             content: '▼';
             display: inline-block;
             margin-right: 5px;
             transition: transform 0.3s;
         }
-        .hpv-dropdown .optgroup.collapsed::before {
+        .hpv-checklist .optgroup.collapsed::before {
             transform: rotate(-90deg);
         }
-        .hpv-dropdown .optgroup + ul {
+        .hpv-checklist .optgroup + ul {
             transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
             max-height: 1000px;
             opacity: 1;
             overflow: hidden;
         }
-        .hpv-dropdown .optgroup.collapsed + ul {
+        .hpv-checklist .optgroup.collapsed + ul {
             max-height: 0;
             opacity: 0;
         }
-        .hpv-dropdown .select-all-group {
+        .hpv-checklist .select-all-group {
             background: none;
             border: none;
             cursor: pointer;
@@ -121,7 +121,7 @@
             font-size: 12px;
             visibility: hidden;
         }
-        .hpv-dropdown .hpv-dropdown-btn-group button {
+        .hpv-checklist .hpv-checklist-btn-group button {
             background: none;
             border-radius: 4px;
             padding: 5px 10px;
@@ -129,41 +129,41 @@
             font-size: 14px;
             width: 100%;
         }
-        .hpv-dropdown .hpv-dropdown-btn-group button:disabled {
+        .hpv-checklist .hpv-checklist-btn-group button:disabled {
             cursor: default;
             border-width: thin;
         }
-        .hpv-dropdown .hpv-dropdown-btn-group button:not([disabled]) {
+        .hpv-checklist .hpv-checklist-btn-group button:not([disabled]) {
             border: 1px solid #2196F3;
             color: #2196F3;
         }
-        .hpv-dropdown .hpv-dropdown-btn-group .select-all-main:not([disabled]):hover {
+        .hpv-checklist .hpv-checklist-btn-group .select-all-main:not([disabled]):hover {
             background-color: #2196F3;
             color: white;
         }
-        .hpv-dropdown .hpv-dropdown-status-container {
+        .hpv-checklist .hpv-checklist-status-container {
             display: flex;
             padding: 10px;
             justify-content: center;
             color: #a7a7a7;
         }
-        .hpv-dropdown .excluded-item {
+        .hpv-checklist .excluded-item {
             text-decoration: line-through;
             font-weight: bold;
             color: red;
         }
-        .hpv-dropdown .hpv-dropdown-disabled {
+        .hpv-checklist .hpv-checklist-disabled {
             color: #ccc;
         }
-        .hpv-dropdown-btn-group .exclusion-mode-toggle.exclusion-active:not([disabled]) {
+        .hpv-checklist-btn-group .exclusion-mode-toggle.exclusion-active:not([disabled]) {
             color:red;
             border: 1px solid red;
         }
-        .hpv-dropdown-btn-group .exclusion-mode-toggle:not(.exclusion-active):not([disabled]) {
+        .hpv-checklist-btn-group .exclusion-mode-toggle:not(.exclusion-active):not([disabled]) {
             color: #31d131;
             border: 1px solid #31d131;
         }
-        .hpv-dropdown-btn-group {
+        .hpv-checklist-btn-group {
             display: flex;
             justify-content: flex-start;
             gap: 20px;
@@ -173,7 +173,7 @@
     </style>
 </head>
 <body>
-   <div id="dropdown1"></div>
+   <div id="checklist1"></div>
 
    <div style="display: flex;flex-direction: column;padding-top:50px;">
     <span>TODO:</span>
@@ -190,7 +190,7 @@
    </div>
 
    <script>
-class HpvDropDown {
+class HpvCheckList {
     constructor(containerId, options = {}) {
         this.defaultOptions = {
             searchPlaceholder: "Search options...",
@@ -217,7 +217,7 @@ class HpvDropDown {
             onClearSearch: null,
             onExclusionModeChange: null,
             items: [],
-            disabledClass: 'hpv-dropdown-disabled',
+            disabledClass: 'hpv-checklist-disabled',
             fieldMap: {
                 keyField: 'id',
                 labelField: 'label',
@@ -264,13 +264,13 @@ class HpvDropDown {
     }
 
     showCustomStatus(htmlContent) {
-        const statusContainer = this.container.querySelector('.hpv-dropdown-status-container');
+        const statusContainer = this.container.querySelector('.hpv-checklist-status-container');
         statusContainer.querySelector('span').innerHTML = htmlContent;
         statusContainer.style.display = 'flex';
     }
 
     hideStatus() {
-        this.container.querySelector('.hpv-dropdown-status-container').style.display = 'none';
+        this.container.querySelector('.hpv-checklist-status-container').style.display = 'none';
     }
 
     afterAddOrRemoveItems() {
@@ -364,7 +364,7 @@ class HpvDropDown {
     }
 
     renderItems() {
-        const checkboxList = this.container.querySelector('.hpv-dropdown-checkbox-list');
+        const checkboxList = this.container.querySelector('.hpv-checklist-checkbox-list');
         checkboxList.innerHTML = '';
 
         const groupedItems = this.groupItems();
@@ -774,12 +774,12 @@ class UIModule {
         toggleButton.innerHTML = this.dropdown.currentModeIsExclusion ? this.dropdown.options.exclusionText : this.dropdown.options.inclusionText;
         
         toggleButton.addEventListener('click', () => {
-            this.toogleCurrentMode();
+            this.dropdown.toogleCurrentMode();
             // toggle class .exclusion-active
             toggleButton.classList.toggle('exclusion-active');
             toggleButton.innerHTML = this.dropdown.currentModeIsExclusion ? this.dropdown.options.exclusionText : this.dropdown.options.inclusionText;
             // update item states based on mode
-            this.updateItemStates();
+            this.dropdown.updateItemStates();
             
             // do callback
             if (this.dropdown.options.onExclusionModeChange) {
@@ -788,26 +788,26 @@ class UIModule {
         });
         
         // add new button
-        this.dropdown.container.querySelector('.hpv-dropdown-btn-group').appendChild(toggleButton);
+        this.dropdown.container.querySelector('.hpv-checklist-btn-group').appendChild(toggleButton);
     }
 
     createDropdownContainer() {
-        // set class hpv-dropdown to this.container
-        this.dropdown.container.classList.add('hpv-dropdown');
+        // set class hpv-checklist to this.container
+        this.dropdown.container.classList.add('hpv-checklist');
 
         const dropdownHTML = `
             <div class="search-container">
                 <input type="text" class="search-input" placeholder="${this.dropdown.options.searchPlaceholder}">
                 <button class="clear-search" title="${this.dropdown.options.clearSearchTooltip}">&times;</button>
             </div>
-            <div class="hpv-dropdown-content">
-                <div class="hpv-dropdown-btn-group">
+            <div class="hpv-checklist-content">
+                <div class="hpv-checklist-btn-group">
                     <button class="select-all-main">${this.dropdown.options.selectAllMainText}</button>
                 </div>
-                <div class="hpv-dropdown-status-container">
+                <div class="hpv-checklist-status-container">
                     <span>${this.dropdown.options.emptyText}</span>    
                 </div>
-                <div class="hpv-dropdown-checkbox-list"></div>
+                <div class="hpv-checklist-checkbox-list"></div>
             </div>
         `;
 
@@ -818,7 +818,7 @@ class UIModule {
 
 var scope = {};
 document.addEventListener('DOMContentLoaded', () => {
-    const dropdown1 = new HpvDropDown('dropdown1', {
+    const checklist1 = new HpvCheckList('checklist1', {
         searchPlaceholder: "Buscar por...",
         selectAllMainText: "Selec. Todos Visíveis",
         selectAllGroupText: "Selec. Grupo",
@@ -854,20 +854,20 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 22, label: 'Camaro Bubblebee', optgroup: 'Cars' },
     ];
 
-    dropdown1.addItems(items);
+    checklist1.addItems(items);
 
-    dropdown1.addItem({ 'id': 4, 'label': 'Abacaxi', 'optgroup': 'Fruits' });
-    // dropdown1.removeAllItems();
+    checklist1.addItem({ 'id': 4, 'label': 'Abacaxi', 'optgroup': 'Fruits' });
+    // checklist1.removeAllItems();
 
-    scope.dropdown1 = dropdown1;
+    scope.checklist1 = checklist1;
 
-    console.log('Dropdown 1 selected items:', dropdown1.getSelectedItems());
+    console.log('Dropdown 1 selected items:', checklist1.getSelectedItems());
     // console.log('Dropdown 2 selected items:', dropdown2.getSelectedItems());
 
     // Example usage:
-    // dropdown1.checkItem('1', scope.dropdown1.MODE_INCLUSION, false);
+    // checklist1.checkItem('1', scope.checklist1.MODE_INCLUSION, false);
 
-    console.log('Dropdown 1 selected IDs:', dropdown1.getSelectedIds());
+    console.log('Dropdown 1 selected IDs:', checklist1.getSelectedIds());
     // console.log('Dropdown 2 selected IDs:', dropdown2.getSelectedIds());
 });
    </script>
