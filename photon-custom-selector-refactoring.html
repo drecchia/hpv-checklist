@@ -190,6 +190,13 @@
    </div>
 
    <script>
+class HpvCheckListError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'HpvCheckListError';
+  }
+};
+
 class HpvCheckList {
     constructor(containerId, options = {}) {
         this.defaultOptions = {
@@ -234,15 +241,37 @@ class HpvCheckList {
         this.options = { ...this.defaultOptions, ...options };
         this.container = document.getElementById(containerId);
         this.containerId = containerId;
-        this.items = new Map(); // Store all items { id, el, internal } with their states
 
         // define working mode
         this.setCurrentMode( this.options.defaultMode );
 
-         // Initialize sub-modules
-         this.ui = new UIModule(this);
-         this.search = new SearchModule(this);
-         // this.items = new ItemsModule(this);
+        // Initialize sub-modules
+        this.ui = new UIModule(this);
+        this.search = new SearchModule(this);
+        this.items = new ItemsModule(this);
+    }
+
+    addItems(userItems) {
+        if (!userItems || Array.isArray(userItems) === false) {
+            throw new HpvCheckListError('Invalid items format');
+        }
+
+        this.items.addMultiple(userItems);
+        // TODO, move to ui
+        this.afterAddOrRemoveItems();
+    }
+
+    addItem(item, fireAfterChange = true) {
+        if (!item || typeof item !== 'object') {
+            throw new HpvCheckListError('Invalid item format');
+        }
+
+        this.items.add(item);
+
+        if ( fireAfterChange ) {
+            // TODO, move to ui
+            this.afterAddOrRemoveItems();
+        }
     }
 
     setCurrentMode( mode ) {
@@ -259,25 +288,11 @@ class HpvCheckList {
         this.setCurrentMode( this.currentModeIsExclusion ? this.MODE_INCLUSION : this.MODE_EXCLUSION );
     }
 
-    showEmptyStatus() {
-        this.showCustomStatus(this.options.emptyText);
-    }
-
-    showCustomStatus(htmlContent) {
-        const statusContainer = this.container.querySelector('.hpv-checklist-status-container');
-        statusContainer.querySelector('span').innerHTML = htmlContent;
-        statusContainer.style.display = 'flex';
-    }
-
-    hideStatus() {
-        this.container.querySelector('.hpv-checklist-status-container').style.display = 'none';
-    }
-
     afterAddOrRemoveItems() {
-        if ( this.items.size == 0 ) {
-            this.showCustomStatus(this.options.emptyText);
+        if ( this.items.getSize() == 0 ) {
+            this.ui.showCustomStatus(this.options.emptyText);
         } else {
-            this.hideStatus();
+            this.ui.hideStatus();
         }
 
         // only when items are added after init
@@ -286,43 +301,8 @@ class HpvCheckList {
         this.updateItemStates();
     }
 
-    addItems(userItems) {
-        userItems.forEach(item => {
-            this.addItem(item, false);
-        });
-
-        this.afterAddOrRemoveItems();
-    }
-
-    addItem(item, fireAfterChange = true) {
-        const fieldsMap = this.options.fieldMap;
-        const key = item[fieldsMap.keyField] + ''; // protection
-        const label = item[fieldsMap.labelField];
-        const optgroup = item[fieldsMap.optgroupField];
-        const disabled = item[fieldsMap.disabledField] || false;
-        const checkedInclusionField = item[fieldsMap.checkedInclusionField] || false;
-        const checkedExclusionField = item[fieldsMap.checkedExclusionField] || false;
-
-        this.items.set(key, {
-            key: key,
-            label: label,
-            optgroup: optgroup,
-            disabled: disabled,
-            checkedInclusion: checkedInclusionField,
-            checkedExclusion: checkedExclusionField,
-            // internal
-            checkableInclusion: true,
-            checkableExclusion: true,
-            nativeDisabled: disabled,
-            visible: true,
-        });
-
-        if ( fireAfterChange ) {
-            this.afterAddOrRemoveItems();
-        }
-    }
-
     removeAllItems() {
+        // we wont clear items, only delete el, keeping previous selected items on list
         this.items.clear();
         this.renderItems();
         this.setupItemsEventListeners();
@@ -332,7 +312,7 @@ class HpvCheckList {
     }
     
     checkItem(id, mode, check = true) {
-        const item = this.items.get(id);
+        const item = this.items.items.get(id);
         // Do not allow to change disabled items
         if ( item.nativeDisabled ) return;
 
@@ -344,7 +324,7 @@ class HpvCheckList {
                 item.checkedExclusion = check;
                 item.checkedInclusion = false;
             }
-            this.items.set(id, item);
+            this.items.items.set(id, item);
             // render items
             this.updateItemStates();
         } else {
@@ -353,10 +333,10 @@ class HpvCheckList {
     }
 
     setItemVisibility(id, visible) {
-        const item = this.items.get(id);
+        const item = this.items.items.get(id);
         if (item) {
             item.visible = visible;
-            this.items.set(id, item);
+            this.items.items.set(id, item);
 
             // style
             item.el.style.display = visible ? '' : 'none';
@@ -364,6 +344,7 @@ class HpvCheckList {
     }
 
     renderItems() {
+        const fragment = document.createDocumentFragment();
         const checkboxList = this.container.querySelector('.hpv-checklist-checkbox-list');
         checkboxList.innerHTML = '';
 
@@ -380,7 +361,7 @@ class HpvCheckList {
             // set attribute group-name
             optgroup.setAttribute('group-name', groupName);
 
-            checkboxList.appendChild(optgroup);
+            fragment.appendChild(optgroup);
 
             const ul = document.createElement('ul');
             items.forEach((item) => {
@@ -394,13 +375,15 @@ class HpvCheckList {
 
                 item.el = li;
             });
-            checkboxList.appendChild(ul);
+            fragment.appendChild(ul);
         }
+
+        checkboxList.appendChild(fragment);
     }
 
     // refresh list state
     updateItemStates() {
-        this.items.forEach((item, id) => {
+        this.items.items.forEach((item, id) => {
             const itemContainer = item.el;
             // first input of itemContainer
             const checkbox = itemContainer.querySelector('input[type="checkbox"]');
@@ -446,7 +429,7 @@ class HpvCheckList {
     }
 
     updateSelectAllButtonStates() {
-        const visibleItems = Array.from(this.items.values()).filter(item => item.visible);
+        const visibleItems = Array.from(this.items.items.values()).filter(item => item.visible);
         const allChecked = visibleItems.every(item => 
             this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion
         );
@@ -475,7 +458,7 @@ class HpvCheckList {
 
     groupItems() {
         const groups = {};
-        this.items.forEach(item => {
+        this.items.items.forEach(item => {
             if (!groups[item.optgroup]) {
                 groups[item.optgroup] = [];
             }
@@ -537,7 +520,7 @@ class HpvCheckList {
     }
 
     toggleItemSelection(id) {
-        const item = this.items.get(id);
+        const item = this.items.items.get(id);
         if (!item) return;
 
         if (this.currentModeIsExclusion) {
@@ -547,7 +530,7 @@ class HpvCheckList {
         }
 
         if (this.options.selectMode === 'single') {
-            this.items.forEach((otherItem, otherId) => {
+            this.items.items.forEach((otherItem, otherId) => {
                 if (otherId !== id) {
                     if (this.currentModeIsExclusion) {
                         otherItem.checkedExclusion = false;
@@ -569,9 +552,9 @@ class HpvCheckList {
         console.log(checkbox);
 
         if (isChecked && this.options.onSelect) {
-            this.options.onSelect(id, this.getSelectedItems());
+            this.options.onSelect(id, this.items.getSelectedItems());
         } else if (!isChecked && this.options.onDeselect) {
-            this.options.onDeselect(id, this.getSelectedItems());
+            this.options.onDeselect(id, this.items.getSelectedItems());
         }
     }
 
@@ -580,7 +563,7 @@ class HpvCheckList {
         const groupName = group.getAttribute('group-name');
 
         // find in this.items items where item.optgroup = groupName
-        return Array.from(this.items.values()).filter(item => item.optgroup === groupName);
+        return Array.from(this.items.items.values()).filter(item => item.optgroup === groupName);
     }
 
     selectAllGroup(button) {
@@ -605,9 +588,9 @@ class HpvCheckList {
         });
 
         if (!allChecked && this.options.onSelectGroup) {
-            this.options.onSelectGroup(group.textContent.trim(), groupItems.map(item => item.key), this.getSelectedItems());
+            this.options.onSelectGroup(group.textContent.trim(), groupItems.map(item => item.key), this.items.getSelectedItems());
         } else if (allChecked && this.options.onDeselectGroup) {
-            this.options.onDeselectGroup(group.textContent.trim(), groupItems.map(item => item.key), this.getSelectedItems());
+            this.options.onDeselectGroup(group.textContent.trim(), groupItems.map(item => item.key), this.items.getSelectedItems());
         }
     }
 
@@ -615,7 +598,7 @@ class HpvCheckList {
         if (this.options.selectMode === 'single') return;
 
         // get all ids and filter by visible items
-        const visibleItems = Array.from(this.items.entries())
+        const visibleItems = Array.from(this.items.items.entries())
             .filter(([_, item]) => item.visible)
             .map(([id, item]) => ({id, ...item}));
 
@@ -639,54 +622,118 @@ class HpvCheckList {
         });
 
         if (!allChecked && this.options.onSelectAll) {
-            this.options.onSelectAll(visibleItems.map(item => item.key), this.getSelectedItems());
+            this.options.onSelectAll(visibleItems.map(item => item.key), this.items.getSelectedItems());
         } else if (allChecked && this.options.onDeselectAll) {
-            this.options.onDeselectAll(visibleItems.map(item => item.key), this.getSelectedItems());
+            this.options.onDeselectAll(visibleItems.map(item => item.key), this.items.getSelectedItems());
+        }
+    }
+};
+
+class ItemsModule {
+    constructor(p) {
+        if (!(p instanceof HpvCheckList)) {
+            throw new HpvCheckListError('Parent must be an instance of HpvCheckList');
+        }
+
+        this.parent = p;
+        this.items = new Map(); // Store all items { id, el, internal } with their states
+    }
+
+    // to item module
+    getSelectedItems() {
+        // list all entries from this.items where (item.checkedExclusion || item.checkedInclusion)
+        return Array.from(this.items.entries())
+            .filter(([_, item]) => this.parent.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion)
+            .map(([_, item]) => item);
+    }
+
+    // to item module
+    getSelectedIds() {
+        return Array.from(this.items.entries())
+            .filter(([_, item]) => this.parent.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion)
+            .map(([id, _]) => id);
+    }
+
+    addMultiple(userItems) {
+        userItems.forEach(item => this.add(item, false));
+    }
+
+    add(item, fireAfterChange = true) {
+        const { keyField, labelField, optgroupField, disabledField, checkedInclusionField, checkedExclusionField } = this.parent.options.fieldMap;
+
+        const key = item[keyField] + ''; // protection
+        const label = item[labelField];
+        const optgroup = item[optgroupField];
+        const disabled = item[disabledField] || false;
+        const checkedInclusion = item[checkedInclusionField] || false;
+        const checkedExclusion = item[checkedExclusionField] || false;
+
+        this.items.set(key, {
+            key: key,
+            label: label,
+            optgroup: optgroup,
+            disabled: disabled,
+            checkedInclusion: checkedInclusion,
+            checkedExclusion: checkedExclusion,
+            // internal
+            checkableInclusion: true,
+            checkableExclusion: true,
+            nativeDisabled: disabled,
+            visible: true,
+        });
+
+        if ( fireAfterChange ) {
+            this.parent.afterAddOrRemoveItems();
         }
     }
 
-    getSelectedItems() {
-        return Array.from(this.items.entries())
-            .filter(([_, item]) => this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion)
-            .map(([id, item]) => ({
-                id,
-                value: item.value,
-                label: item.label,
-                excluded: this.currentModeIsExclusion
-            }));
+    remove(id) {
+        if (this.items.has(id)) {
+            this.items.delete(id);
+            return true;
+        }
+
+        return false;
     }
 
-    getSelectedIds() {
-        return Array.from(this.items.entries())
-            .filter(([_, item]) => this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion)
-            .map(([id, _]) => id);
+    removeAll() {
+        // NOTE: will we really remove all items or delete el from DOM?
+        this.items.clear();
+    }
+
+    getSize() {
+        return this.items.size;
     }
 };
 
 class SearchModule {
-    constructor(dropdown) {
-        this.dropdown = dropdown;
+    constructor(p) {
+        if (!(p instanceof HpvCheckList)) {
+            throw new HpvCheckListError('Parent must be an instance of HpvCheckList');
+        }
+
+        this.parent = p;
         this.setupSearchInput();
         this.setupClearSearchButton();
         this.setupSearchInputShortcut();
     }
 
     setupSearchInput() {
-        const searchInput = this.dropdown.container.querySelector('.search-input');
+        const searchInput = this.parent.container.querySelector('.search-input');
         searchInput.addEventListener('input', () => this.performSearch(searchInput.value));
     }
 
     setupClearSearchButton() {
-        const clearButton = this.dropdown.container.querySelector('.clear-search');
+        const clearButton = this.parent.container.querySelector('.clear-search');
         clearButton.addEventListener('click', () => this.clearSearch());
     }
 
     setupSearchInputShortcut() {
-        const searchInput = this.dropdown.container.querySelector('.search-input');
+        const searchInput = this.parent.container.querySelector('.search-input');
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.shiftKey) {
                 e.preventDefault();
-                this.dropdown.selectAllMain();
+                this.parent.selectAllMain();
                 // clear input
                 this.clearSearch();
             }
@@ -694,28 +741,28 @@ class SearchModule {
     }
 
     clearSearch() {
-        const searchInput = this.dropdown.container.querySelector('.search-input');
+        const searchInput = this.parent.container.querySelector('.search-input');
         searchInput.value = '';
         searchInput.dispatchEvent(new Event('input'));
-        if (this.dropdown.options.onClearSearch) {
-            this.dropdown.options.onClearSearch(this.dropdown.getSelectedItems());
+        if (this.parent.options.onClearSearch) {
+            this.parent.options.onClearSearch(this.parent.items.getSelectedItems());
         }
     }
 
     performSearch(filter) {
         const lowerFilter = filter.toLowerCase();
-        const optgroups = this.dropdown.container.querySelectorAll('.optgroup');
+        const optgroups = this.parent.container.querySelectorAll('.optgroup');
         let visibleItemsCount = 0;
 
-        this.dropdown.items.forEach((item, id) => {
-            const visible = this.dropdown.itemMatchesFilter(item, lowerFilter);
-            this.dropdown.setItemVisibility(id, visible);
+        this.parent.items.items.forEach((item, id) => {
+            const visible = this.parent.itemMatchesFilter(item, lowerFilter);
+            this.parent.setItemVisibility(id, visible);
             if (visible) visibleItemsCount++;
         });
 
         optgroups.forEach(group => {
             const groupName = group.getAttribute('group-name');
-            const groupItems = this.dropdown.getGroupItems(group);
+            const groupItems = this.parent.getGroupItems(group);
             const visibleGroupItems = groupItems.filter(item => item.visible);
             
             if (visibleGroupItems.length > 0 || group.querySelector('span').textContent.toLowerCase().includes(lowerFilter)) {
@@ -731,13 +778,13 @@ class SearchModule {
         });
 
         if (visibleItemsCount === 0) {
-            this.dropdown.showEmptyStatus();
+            this.parent.ui.showEmptyStatus();
         } else {
-            this.dropdown.hideStatus();
+            this.parent.ui.hideStatus();
         }
 
-        if (this.dropdown.options.onSearch) {
-            this.dropdown.options.onSearch(filter, this.dropdown.getSelectedItems());
+        if (this.parent.options.onSearch) {
+            this.parent.options.onSearch(filter, this.parent.items.getSelectedItems());
         }
 
         // this.updateItemStates();
@@ -748,8 +795,12 @@ class SearchModule {
 };
 
 class UIModule {
-    constructor(dropdown) {
-        this.dropdown = dropdown;
+    constructor(p) {
+        if (!(p instanceof HpvCheckList)) {
+            throw new HpvCheckListError('Parent must be an instance of HpvCheckList');
+        }
+        
+        this.parent = p;
         this.createDropdownContainer();
         // select all button and group buttons ( by Event Target )
         this.setupSelectAllButtons();
@@ -757,62 +808,79 @@ class UIModule {
         this.setupExclusionModeToggle();
     }
 
+    showEmptyStatus() {
+        this.showCustomStatus(this.parent.options.emptyText);
+    }
+
+    showCustomStatus(htmlContent) {
+        const statusContainer = this.parent.container.querySelector('.hpv-checklist-status-container');
+        statusContainer.querySelector('span').innerHTML = htmlContent;
+        statusContainer.style.display = 'flex';
+    }
+
+    hideStatus() {
+        this.parent.container.querySelector('.hpv-checklist-status-container').style.display = 'none';
+    }
+
     setupSelectAllButtons() {
-        this.dropdown.container.addEventListener('click', (e) => {
-            if (e.target.classList.contains('select-all-group')) {
-                this.dropdown.selectAllGroup(e.target);
-            } else if (e.target.classList.contains('select-all-main')) {
-                this.dropdown.selectAllMain();
+        this.parent.container.addEventListener('click', (e) => {
+            if (e.target.matches('.select-all-group')) {
+                this.parent.selectAllGroup(e.target);
+            } else if (e.target.matches('.select-all-main')) {
+                this.parent.selectAllMain();
             }
         });
     }
 
     // create inclusion/exclusion mode toggle button
     setupExclusionModeToggle() {
+        const { exclusionText, inclusionText } = this.parent.options;
+
         const toggleButton = document.createElement('button');
         toggleButton.className = 'exclusion-mode-toggle';
-        toggleButton.innerHTML = this.dropdown.currentModeIsExclusion ? this.dropdown.options.exclusionText : this.dropdown.options.inclusionText;
+        toggleButton.innerHTML = this.parent.currentModeIsExclusion ? exclusionText : inclusionText;
         
         toggleButton.addEventListener('click', () => {
-            this.dropdown.toogleCurrentMode();
+            this.parent.toogleCurrentMode();
             // toggle class .exclusion-active
             toggleButton.classList.toggle('exclusion-active');
-            toggleButton.innerHTML = this.dropdown.currentModeIsExclusion ? this.dropdown.options.exclusionText : this.dropdown.options.inclusionText;
+            toggleButton.innerHTML = this.parent.currentModeIsExclusion ? exclusionText : inclusionText;
             // update item states based on mode
-            this.dropdown.updateItemStates();
+            this.parent.updateItemStates();
             
             // do callback
-            if (this.dropdown.options.onExclusionModeChange) {
-                this.dropdown.options.onExclusionModeChange(this.dropdown.currentModeIsExclusion, this.dropdown.getSelectedItems());
+            if (this.parent.options.onExclusionModeChange) {
+                this.parent.options.onExclusionModeChange(this.parent.currentModeIsExclusion, this.parent.items.getSelectedItems());
             }
         });
         
         // add new button
-        this.dropdown.container.querySelector('.hpv-checklist-btn-group').appendChild(toggleButton);
+        this.parent.container.querySelector('.hpv-checklist-btn-group').appendChild(toggleButton);
     }
 
     createDropdownContainer() {
         // set class hpv-checklist to this.container
-        this.dropdown.container.classList.add('hpv-checklist');
+        this.parent.container.classList.add('hpv-checklist');
+        const { searchPlaceholder, clearSearchTooltip, selectAllMainText, emptyText } = this.parent.options;
 
         const dropdownHTML = `
             <div class="search-container">
-                <input type="text" class="search-input" placeholder="${this.dropdown.options.searchPlaceholder}">
-                <button class="clear-search" title="${this.dropdown.options.clearSearchTooltip}">&times;</button>
+                <input type="text" class="search-input" placeholder="${searchPlaceholder}">
+                <button class="clear-search" title="${clearSearchTooltip}">&times;</button>
             </div>
             <div class="hpv-checklist-content">
                 <div class="hpv-checklist-btn-group">
-                    <button class="select-all-main">${this.dropdown.options.selectAllMainText}</button>
+                    <button class="select-all-main">${selectAllMainText}</button>
                 </div>
                 <div class="hpv-checklist-status-container">
-                    <span>${this.dropdown.options.emptyText}</span>    
+                    <span>${emptyText}</span>    
                 </div>
                 <div class="hpv-checklist-checkbox-list"></div>
             </div>
         `;
 
         // Append the HTML to the desired parent element
-        this.dropdown.container.innerHTML += dropdownHTML;
+        this.parent.container.innerHTML += dropdownHTML;
     }
 };
 
@@ -861,14 +929,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     scope.checklist1 = checklist1;
 
-    console.log('Dropdown 1 selected items:', checklist1.getSelectedItems());
+    console.log('Dropdown 1 selected items:', checklist1.items.getSelectedItems());
     // console.log('Dropdown 2 selected items:', dropdown2.getSelectedItems());
 
     // Example usage:
     // checklist1.checkItem('1', scope.checklist1.MODE_INCLUSION, false);
 
-    console.log('Dropdown 1 selected IDs:', checklist1.getSelectedIds());
-    // console.log('Dropdown 2 selected IDs:', dropdown2.getSelectedIds());
+    console.log('Dropdown 1 selected IDs:', checklist1.items.getSelectedIds());
+    // console.log('Dropdown 2 selected IDs:', dropdown2.items.getSelectedIds());
 });
    </script>
 </body>
