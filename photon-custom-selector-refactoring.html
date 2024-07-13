@@ -170,6 +170,52 @@
             padding-left: 10px;
             padding-right: 10px;
         }
+
+        .hpv-checklist .custom-checkbox {
+            width: 15px;
+            height: 15px;
+            border: 2px solid #ccc;
+            border-radius: 3px;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .hpv-checklist .custom-checkbox[data-checked="true"] {
+            background-color: #2196F3;
+            border-color: #2196F3;
+        }
+
+        .hpv-checklist .custom-checkbox[data-disabled="true"] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .hpv-checklist .custom-checkbox .checkbox-inner {
+            position: absolute;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            width: 3px;
+            height: 10px;
+            top: 0px;
+            left: 5px;
+            transform: rotate(45deg);
+            display: none;
+        }
+
+        .hpv-checklist .custom-checkbox[data-checked="true"] .checkbox-inner {
+            display: block;
+        }
+
+        .hpv-checklist .checkbox-label {
+            margin-left: 8px;
+            cursor: pointer;
+        }
+
+        .hpv-checklist li {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -347,7 +393,6 @@ class HpvCheckList {
                 <button class="select-all-group">${this.options.selectAllGroupText}</button>
             `;
 
-            // set attribute group-name
             optgroup.setAttribute('group-name', groupName);
 
             fragment.appendChild(optgroup);
@@ -357,8 +402,10 @@ class HpvCheckList {
                 const li = document.createElement('li');
                 li.className = item.disabled ? this.options.disabledClass : '';
                 li.innerHTML = `
-                    <input type="checkbox" id="${item.key}" name="${item.key}" ${item.disabled ? 'disabled' : ''} ${item.checkedInclusion ? 'checked' : ''}>
-                    <label for="${item.key}">${item.label}</label>
+                    <div class="custom-checkbox" id="${item.key}" ${item.disabled ? 'data-disabled' : ''} ${item.checkedInclusion ? 'data-checked' : ''}>
+                        <div class="checkbox-inner"></div>
+                    </div>
+                    <div class="checkbox-label">${item.label}</div>
                 `;
                 ul.appendChild(li);
 
@@ -374,46 +421,32 @@ class HpvCheckList {
     updateItemStates() {
         this.items.items.forEach((item, id) => {
             const itemContainer = item.el;
-            // first input of itemContainer
-            const checkbox = itemContainer.querySelector('input[type="checkbox"]');
-            const label = checkbox.nextElementSibling;
+            const customCheckbox = itemContainer.querySelector('.custom-checkbox');
+            const label = itemContainer.querySelector('.checkbox-label');
             const isNativeDisabled = item.nativeDisabled;
 
-            checkbox.checked = this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion;
+            const isChecked = this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion;
+            customCheckbox.setAttribute('data-checked', isChecked);
 
-            if ( isNativeDisabled ) {
-                checkbox.disabled = true;
+            if (isNativeDisabled) {
+                customCheckbox.setAttribute('data-disabled', true);
             } else {
-                checkbox.disabled = this.currentModeIsExclusion ? item.checkedInclusion : item.checkedExclusion;
+                customCheckbox.removeAttribute('data-disabled');
             }
 
             label.classList.toggle('excluded-item', this.currentModeIsExclusion && item.checkedExclusion);
-            checkbox.closest('li').classList.toggle(this.options.disabledClass, checkbox.disabled);
+            itemContainer.classList.toggle(this.options.disabledClass, isNativeDisabled || (this.currentModeIsExclusion ? item.checkedInclusion : item.checkedExclusion));
 
-            // change item title explaining why its disabled
-            if (checkbox.disabled) {
-                if ( isNativeDisabled ) {
-                    // TODO: parametrize this message(s)
-                    label.title = 'This item is disabled';
-                } else {
-                    // TODO: parametrize this message(s)
-                    label.title = this.currentModeIsExclusion ? 'Included in query' : 'Excluded from query';
-                }
+            if (customCheckbox.hasAttribute('data-disabled')) {
+                label.title = isNativeDisabled ? 'This item is disabled' : (this.currentModeIsExclusion ? 'Included in query' : 'Excluded from query');
             } else {
                 label.title = '';
             }
 
-            // Update data attributes
-            if ( isNativeDisabled ) {
-                item.checkableInclusion = false;
-                item.checkableExclusion = false;
-            } else {
-                item.checkableInclusion = !item.checkedExclusion;
-                item.checkableExclusion = !item.checkedInclusion;
-            }
+            item.checkableInclusion = !isNativeDisabled && !item.checkedExclusion;
+            item.checkableExclusion = !isNativeDisabled && !item.checkedInclusion;
         });
 
-        // update button state, because it depends on the items state, if all selected will change button state to disabled
         this.updateSelectAllButtonStates();
     }
 
@@ -442,7 +475,6 @@ class HpvCheckList {
     setupItemsEventListeners() {
         this.setupCollapsibleOptgroups();
         this.setupClickableListItems();
-        this.setupCheckboxes();
     }
 
     itemMatchesFilter(item, lowerFilter) {
@@ -477,22 +509,11 @@ class HpvCheckList {
         const listItems = this.container.querySelectorAll('li');
         listItems.forEach(item => {
             item.addEventListener('click', (e) => {
-                if (e.target.tagName.toLowerCase() !== 'input') {
-                    const checkbox = item.querySelector('input[type="checkbox"]');
-                    if (!checkbox.disabled) {
-                        this.toggleItemSelection(checkbox.id);
-                        e.preventDefault();
-                    }
+                const customCheckbox = item.querySelector('.custom-checkbox');
+                if (!customCheckbox.hasAttribute('data-disabled')) {
+                    this.toggleItemSelection(customCheckbox.id);
+                    e.preventDefault();
                 }
-            });
-        });
-    }
-
-    setupCheckboxes() {
-        const checkboxes = this.container.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                this.toggleItemSelection(checkbox.id);
             });
         });
     }
@@ -522,12 +543,9 @@ class HpvCheckList {
         this.updateItemStates();
 
         const isChecked = this.currentModeIsExclusion ? item.checkedExclusion : item.checkedInclusion;
-        // set real checkbox state
         const elContainer = item.el;
-        const checkbox = elContainer.querySelector('input[type="checkbox"]');
-        // set attribute checked
-        checkbox.setAttribute('checked', isChecked);
-        console.log(checkbox);
+        const customCheckbox = elContainer.querySelector('.custom-checkbox');
+        customCheckbox.setAttribute('data-checked', isChecked);
 
         if (isChecked && this.options.onSelect) {
             this.options.onSelect(id, this.items.getSelectedItems());
