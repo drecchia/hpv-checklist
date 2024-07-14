@@ -350,10 +350,10 @@ class HpvCheckList {
     //     }
     // }
 
-    setItemVisibility(id, visible) {
+    setItemVisibility(id, attr, visible) {
         const item = this.items.items.get(id);
         if (item) {
-            item.visible = visible;
+            item[attr] = visible;
             this.items.items.set(id, item);
 
             // style
@@ -626,7 +626,7 @@ class ItemsModule {
             disabled: disabled,
             // internal
             nativeDisabled: disabled,
-            visible: true,
+            visibleAfterSearch: true,
         });
 
         if (fireAfterChange) {
@@ -725,7 +725,7 @@ class SearchModule {
 
     toggleVisibleItems(targetState) {
         const visibleItems = Array.from(this.parent.items.items.entries())
-            .filter(([_, item]) => item.visible && !item.nativeDisabled);
+            .filter(([_, item]) => item.visibleAfterSearch && !item.nativeDisabled);
 
         const allInTargetState = visibleItems.every(([_, item]) => item.value === targetState);
 
@@ -770,14 +770,14 @@ class SearchModule {
 
         this.parent.items.items.forEach((item, id) => {
             const visible = this.parent.itemMatchesFilter(item, lowerFilter);
-            this.parent.setItemVisibility(id, visible);
+            this.parent.setItemVisibility(id, 'visibleAfterSearch', visible);
             if (visible) visibleItemsCount++;
         });
 
         optgroups.forEach(group => {
             const groupName = group.getAttribute('group-name');
             const groupItems = this.parent.getItemsByGroup(groupName);
-            const visibleGroupItems = groupItems.filter(item => item.visible);
+            const visibleGroupItems = groupItems.filter(item => item.visibleAfterSearch);
             
             if (visibleGroupItems.length > 0 || groupName.toLowerCase().includes(lowerFilter)) {
                 group.style.display = '';
