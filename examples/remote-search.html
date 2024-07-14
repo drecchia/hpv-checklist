@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HpvCheckList Component</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0 auto;
+        }
+        /*  THIS IS TEST ONLY  */
+        .hpv-checklist {
+            width: 400px;
+            margin: 20px;
+            border-style: solid;
+            border-width: thin;
+            border-radius: 8px;
+        }
+    </style>
+    <!-- <link rel="stylesheet" type="text/css" href="../src/css/checklist.css">
+    <script src="../src/js/checklist.js"></script> -->
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hpv-checklist@1.0.0/dist/css/all.css" integrity="sha256-O/R8owX3xVB8jgP2RAIfOfYqjL+C9+3sVK4+TD0EX4s=" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/hpv-checklist@1.0.0/dist/js/all.min.js" integrity="sha256-SQuVIYfgZI/wuP2qhjq7zmvsL5UvwcQvGGP8NOnFtyc=" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="checklist1"></div>
+    <script>
+        var scope = {};
+        document.addEventListener('DOMContentLoaded', () => {
+            const checklist1 = new HpvCheckList('checklist1', {
+                selectMode: 'multiple', // 'single' or 'multiple'
+                states: [0, 1, 2],
+                searchMode: 'remote',
+                onSearchInputDelay: (checklist, searchTerm) => { 
+                    console.log('Delayed search for:', searchTerm);
+                    checklist.removeAllItems();
+                    checklist.ui.showCustomStatus('Loading remote data...');
+
+                    // DO YOUR REMOTE SEARCH HERE
+
+                    // REMOTE CALLBACK WITH DATA
+                    const items = [
+                        { id: 1, label: 'Apple', optgroup: 'Fruits', value: 1 },
+                        { id: 2, label: 'Banana', optgroup: 'Fruits', disabled: true },
+                        { id: 3, label: 'Cherry', optgroup: 'Fruits', value: 2 },
+                        { id: 10, label: 'Carrot', optgroup: 'Vegetables', value: 3 },
+                        { id: 11, label: 'Broccoli', optgroup: 'Vegetables' },
+                        { id: 12, label: 'Spinach', optgroup: 'Vegetables' },
+                        { id: 20, label: 'Gol Gti 1.0', optgroup: 'Cars' },
+                        { id: 21, label: 'Fiat Palio V8', optgroup: 'Cars' },
+                        { id: 22, label: 'Camaro Bubblebee', optgroup: 'Cars' },
+                    ];
+
+                    scope.checklist1.ui.hideStatus();
+                    checklist.addItems(items);
+                },
+
+                fieldMap: {
+                    keyField: 'id',
+                    labelField: 'label',
+                    valueField: 'value',
+                    optgroupField: 'optgroup',
+                    disabledField: 'disabled',
+                },
+            });
+
+            scope.checklist1 = checklist1;
+        });
+    </script>
+</body>
+</html>
