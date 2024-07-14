@@ -325,12 +325,15 @@ class HpvCheckList {
         }
     }
 
+    removeItem(id) {
+        if (this.items.remove(id)) {
+            this.ui.afterAddOrRemoveItems();
+        }
+    }
+
     removeAllItems() {
         // we wont clear items, only delete el, keeping previous selected items on list
         this.items.removeAll();
-        this.renderItems();
-        this.setupItemsEventListeners();
-        this.updateItemStates();
 
         this.ui.afterAddOrRemoveItems();
     }
