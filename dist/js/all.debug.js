@@ -18,6 +18,7 @@ class HpvCheckList {
 			selectMode: 'multiple',
 			maxSelectableItems: 1000,
 			states: [0, 1], // from 0 to 4
+			searchMode: 'local', // remote or local
 			onSelect: null,
 			onDeselect: null,
 			onSelectAll: null,
@@ -478,20 +479,23 @@ class HpvChecklistSearchModule {
 		searchInput.addEventListener('input', () => {
 			const value = searchInput.value;
 			const selectedItems = this.parent.items.getSelectedItems();
+			const { onSearchInputDelay, onSearchInput, searchMode} = this.parent.options;
 
-			if (this.parent.options.onSearchInputDelay) {
+			if (onSearchInputDelay) {
 				clearTimeout(this.timeout);
 
 				this.timeout = setTimeout(() => {
-					this.parent.options.onSearchInputDelay(value, selectedItems);
+					onSearchInputDelay(this.parent, value, selectedItems);
 				}, 200);
 			}
 
-			if (this.parent.options.onSearchInput) {
-				this.parent.options.onSearchInput(value, selectedItems);
+			if (onSearchInput) {
+				onSearchInput(this.parent, value, selectedItems);
 			}
 
-			this.performLocalSearch(value);
+			if ( searchMode === 'local' ) {
+				this.performLocalSearch(value);
+			}
 		});
 	}
 
@@ -593,7 +597,7 @@ class HpvChecklistSearchModule {
 		}
 
 		if (this.parent.options.onLocalSearchResult) {
-			this.parent.options.onLocalSearchResult(filter, this.parent.items.getSelectedItems());
+			this.parent.options.onLocalSearchResult(this.parent, filter, this.parent.items.getVisibleItems(false));
 		}
 	}
 };
