@@ -33,6 +33,10 @@
             -webkit-user-select: none; /* For Safari */
             -moz-user-select: none; /* For Firefox */
             -ms-user-select: none; /* For IE10+/Edge */
+            transition: opacity 0.3s ease-out;
+        }
+        .hpv-checklist li.fade-out {
+            opacity: 0;
         }
         .hpv-checklist li:hover {
             background-color: #f3f3f3;
@@ -326,8 +330,15 @@ class HpvCheckList {
     }
 
     removeItem(id) {
-        if (this.items.remove(id)) {
-            this.ui.afterAddOrRemoveItems();
+        const item = this.items.items.get(id);
+
+        if (item && item.el) {
+            item.hiddenBySelection = true;
+            item.el.classList.add('fade-out');
+            setTimeout(() => {
+                this.items.remove(id);
+                this.ui.afterAddOrRemoveItems();
+            }, 300); // Match this with the CSS transition duration
         }
     }
 
@@ -582,9 +593,9 @@ class ItemsModule {
     }
 
     getVisibleItems( includeDisabled = true ) {
-        // return all items where item.visible = true and item.disabled = false
+        // return all items where item.visibleAfterSearch = true and item.disabled = false
         return Array.from(this.items.entries())
-            .filter(([_, item]) => item.visible && (includeDisabled || !item.nativeDisabled))
+            .filter(([_, item]) => item.visibleAfterSearch && (includeDisabled || !item.nativeDisabled))
             .map(([_, item]) => item);
     }
 
