@@ -31,10 +31,11 @@ Need extra help? Have a look at [the examples](https://github.com/drecchia/hpv-c
 
 ---
 
-![Full](imgs/Screenshot_1.png?raw=true "Full Rendered")
-![Search](imgs/Screenshot_2.png?raw=true "Searching")
-![Search by OptGroup](imgs/Screenshot_3.png?raw=true "Search by optgroup")
-![Status Text](imgs/Screenshot_4.png?raw=true "Status Text")
+![Animation](imgs/animated.gif?raw=true "Full Animation")<br>
+![Full](imgs/Screenshot_1.png?raw=true "Full Rendered")<br>
+![Search](imgs/Screenshot_2.png?raw=true "Searching")<br>
+![Search by OptGroup](imgs/Screenshot_3.png?raw=true "Search by optgroup")<br>
+![Status Text](imgs/Screenshot_4.png?raw=true "Status Text")<br>
 
 --- 
 
