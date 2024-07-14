@@ -6,7 +6,7 @@
 Design to offer flexibility across all environments with no dependecies. Hpv-Checklist is a _First Class_ solution for webapps checkbox lists. Unlike other options, it is not tied to a select or floating UI. It is very small (~8Kb) and customizable through a wide range of options.
 
 
-[Online Demo](https://jsfiddle.net/LINK_HERE/)
+[Online Demo](https://jsfiddle.net/yje571g9/2/)
 
 Need extra help? Have a look at [the examples](https://github.com/drecchia/hpv-checklist/tree/master/examples) folder. Fill an [issue](https://github.com/drecchia/hpv-checklist/issues) if necessary.<br />
 
@@ -15,12 +15,14 @@ Need extra help? Have a look at [the examples](https://github.com/drecchia/hpv-c
 ### Features
 
 - [x] 100% VanillaJS
+- [x] Items from js model.
 - [x] No external dependencies
 - [x] Flexbox based
-- [x] No css framework related
-- [x] No forced input or font theme
+- [x] Not attached to any css framework
+- [x] No forced style
+- [x] Remote Search Interface for custom implementation.
 - [x] Vast callback interfaces
-- [x] Custom item renderer
+- [x] Custom item renderer support
 - [x] Multi state checkbox (tri-state or more)
 - [x] Optgroup with collapse support
 - [x] Search by items or optgroups
