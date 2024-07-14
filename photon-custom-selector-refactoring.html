@@ -234,7 +234,6 @@
 
    <div style="display: flex;flex-direction: column;padding-top:50px;">
     <span>TODO:</span>
-    <span>Single mode nao esta funcionando com states</span>
     <span>Max Nr of items</span>
     <span>Remove from list after click</span>
     <span>Not mandatory optgroups</span>
@@ -606,9 +605,14 @@ class ItemsModule {
 
         const key = item[keyField] + ''; // protection
         const label = item[labelField];
-        const value = item[valueField] || 0;
+        let value = item[valueField] || 0;
         const optgroup = item[optgroupField];
         const disabled = item[disabledField] || false;
+
+        // Ensure the value is within the allowed states
+        if (!this.parent.options.states.includes(value)) {
+            value = this.parent.options.states[0]; // Default to the first state if not found
+        }
 
         this.items.set(key, {
             key: key,
@@ -621,7 +625,7 @@ class ItemsModule {
             visible: true,
         });
 
-        if ( fireAfterChange ) {
+        if (fireAfterChange) {
             this.parent.ui.afterAddOrRemoveItems();
         }
     }
@@ -768,7 +772,7 @@ class SearchModule {
 
         optgroups.forEach(group => {
             const groupName = group.getAttribute('group-name');
-            const groupItems = this.parent.getItemsByGroup(group);
+            const groupItems = this.parent.getItemsByGroup(groupName);
             const visibleGroupItems = groupItems.filter(item => item.visible);
             
             if (visibleGroupItems.length > 0 || groupName.toLowerCase().includes(lowerFilter)) {
@@ -792,11 +796,7 @@ class SearchModule {
         if (this.parent.options.onLocalSearchResult) {
             this.parent.options.onLocalSearchResult(filter, this.parent.items.getSelectedItems());
         }
-
-        // this.updateItemStates();
     }
-
-    // ... (other search-related methods)
 };
 
 class UIModule {
@@ -914,7 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     checklist1.addItems(items);
 
-    checklist1.addItem({ 'id': 4, 'label': 'Abacaxi', 'optgroup': 'Fruits' });
+    checklist1.addItem({ 'id': 4, 'label': 'Abacaxi', 'optgroup': 'Fruits', value: 10 });
     // checklist1.removeAllItems();
 
     scope.checklist1 = checklist1;
