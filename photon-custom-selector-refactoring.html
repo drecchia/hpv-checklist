@@ -857,7 +857,7 @@ class UIModule {
 
     afterAddOrRemoveItems() {
         if ( this.parent.items.getSize() == 0 ) {
-            this.showCustomStatus(this.options.emptyText);
+            this.showCustomStatus(this.parent.options.emptyText);
         } else {
             this.hideStatus();
         }
