@@ -26,8 +26,31 @@
 </head>
 <body>
     <div id="checklist1"></div>
+    <br>
+    <button onclick="scope.checklist1.addItems(scope.items)">Add Many Items</button>
+    <br>
+    <button onclick="scope.checklist1.removeAllItems()">Remove All Items</button>
+    <br>
+    <button onclick="scope.checklist1.addItem({ 'id': 100, 'label': 'Potato', value: 0 })">Add Potato</button>
+    <br>
+    <button onclick="scope.checklist1.addItem({ 'id': 4, 'label': 'Pineapple', optgroup: 'Fruits', value: 0 })">Add Pineapple</button>
+    <br>
+    <button onclick="scope.checklist1.addItem({ 'id': 5, 'label': 'Strawberry', optgroup: 'Fruits', value: 0 })">Add Strawberry</button>
+    <br>
     <script>
         var scope = {};
+        scope.items = [
+            { id: 1, label: 'Apple', optgroup: 'Fruits', value: 1 },
+            { id: 2, label: 'Banana', optgroup: 'Fruits', disabled: true },
+            { id: 3, label: 'Cherry', optgroup: 'Fruits', value: 2 },
+            { id: 10, label: 'Carrot', optgroup: 'Vegetables', value: 3 },
+            { id: 11, label: 'Broccoli', optgroup: 'Vegetables' },
+            { id: 12, label: 'Spinach', optgroup: 'Vegetables' },
+            { id: 20, label: 'Gol Gti 1.0', optgroup: 'Cars' },
+            { id: 21, label: 'Fiat Palio V8', optgroup: 'Cars' },
+            { id: 22, label: 'Camaro Bubblebee', optgroup: 'Cars' },
+        ];
+
         document.addEventListener('DOMContentLoaded', () => {
             const checklist1 = new HpvCheckList('checklist1', {
                 searchPlaceholder: "Buscar por...",
@@ -40,6 +63,7 @@
                 selectMode: 'multiple', // 'single' or 'multiple'
                 states: [0, 1, 2, 3, 4],
                 maxSelectableItems: 1000,
+                searchMode: 'local',
                 onSelect: (checkList, id, changedItem) => console.log('Selected:', id, changedItem),
                 onDeselect: (checkList, id, changedItem) => console.log('Deselected:', id, changedItem),
                 onSelectGroup: (checkList, groupName, group, changedItems) => console.log('Selected group:', groupName, changedItems),
@@ -49,8 +73,8 @@
                 onSelectAll: (checkList, changedItems) => console.log('Selected all:', changedItems),
                 onDeselectAll: (checkList, changedItems) => console.log('Deselected all:', changedItems),
 
-                onLocalSearchResult: (searchTerm) => console.log('Search completed for term:', searchTerm),
-                onSearchInputDelay: (searchTerm) => console.log('Delayed search for:', searchTerm),
+                onLocalSearchResult: (checkList, searchTerm, visibleItems) => console.log('Search completed for term:', searchTerm),
+                onSearchInputDelay: (checkList, searchTerm, visibleItems) => console.log('Delayed search for:', searchTerm),
                 onClearSearch: () => console.log('Search cleared'),
 
                 fieldMap: {
@@ -62,25 +86,7 @@
                 },
             });
 
-            const items = [
-                { id: 1, label: 'Apple', optgroup: 'Fruits', value: 1 },
-                { id: 2, label: 'Banana', optgroup: 'Fruits', disabled: true },
-                { id: 3, label: 'Cherry', optgroup: 'Fruits', value: 2 },
-                { id: 10, label: 'Carrot', optgroup: 'Vegetables', value: 3 },
-                { id: 11, label: 'Broccoli', optgroup: 'Vegetables' },
-                { id: 12, label: 'Spinach', optgroup: 'Vegetables' },
-                { id: 20, label: 'Gol Gti 1.0', optgroup: 'Cars' },
-                { id: 21, label: 'Fiat Palio V8', optgroup: 'Cars' },
-                { id: 22, label: 'Camaro Bubblebee', optgroup: 'Cars' },
-            ];
-
             scope.checklist1 = checklist1;
-
-            checklist1.addItems(items);
-
-            checklist1.addItem({ 'id': 4, 'label': 'Abacaxi', value: 0 });
-            checklist1.addItem({ 'id': 5, 'label': 'Morango', value: 0 });
-            // checklist1.removeAllItems();
 
             console.log('Dropdown 1 selected items:', checklist1.items.getSelectedItems());
             // console.log('Dropdown 2 selected items:', dropdown2.getSelectedItems());
