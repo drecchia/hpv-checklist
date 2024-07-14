@@ -252,13 +252,11 @@
    <div style="display: flex;flex-direction: column;padding-top:50px;">
     <span>TODO:</span>
     <span>Max Nr of items</span>
-    <span>Remove from list after click</span>
-    <span>Not mandatory optgroups</span>
+    <span>Remove from list after click [ leave to user handle on callback ]</span>
     <span>virtualscroll</span>
     <span>remote list</span>
     <span>focus search-input</span>
     <span>custom render list item</span>
-    <span>Why renderItems and updateItemState, sounds redundancy</span>
    </div>
 
    <script>
@@ -492,9 +490,9 @@ class HpvCheckList {
                 selectAllBtn.style.visibility = isCollapsing ? 'hidden' : 'visible';
 
                 if (isCollapsing && this.options.onCollapseGroup) {
-                    this.options.onCollapseGroup(groupName, group, this.getItemsByGroup(groupName));
+                    this.options.onCollapseGroup(this, groupName, group, this.getItemsByGroup(groupName));
                 } else if (!isCollapsing && this.options.onExpandGroup) {
-                    this.options.onExpandGroup(groupName, group, this.getItemsByGroup(groupName));
+                    this.options.onExpandGroup(this, groupName, group, this.getItemsByGroup(groupName));
                 }
             });
         }
@@ -532,9 +530,9 @@ class HpvCheckList {
         this.updateItemStates();
 
         if (item.value !== this.options.states[0] && this.options.onSelect) {
-            this.options.onSelect(id, item);
+            this.options.onSelect(this, id, item);
         } else if (item.value === this.options.states[0] && this.options.onDeselect) {
-            this.options.onDeselect(id, item);
+            this.options.onDeselect(this, id, item);
         }
     }
 
@@ -556,9 +554,9 @@ class HpvCheckList {
         const newValue = this.goToNextState(items);
 
         if (newValue !== this.options.states[0] && this.options.onSelectGroup) {
-            this.options.onSelectGroup(groupName, this.items.getSelectedItems());
+            this.options.onSelectGroup(this, groupName, group, items);
         } else if (newValue === this.options.states[0] && this.options.onDeselectGroup) {
-            this.options.onDeselectGroup(groupName, this.items.items);
+            this.options.onDeselectGroup(this, groupName, group, items);
         }
     }
 
@@ -597,9 +595,9 @@ class HpvCheckList {
         const newValue = this.goToNextState(visibleItemsWithoutDisabled);
 
         if (newValue > 0 && this.options.onSelectAll) {
-            this.options.onSelectAll(visibleItemsWithoutDisabled.map(item => item.key), this.items.getSelectedItems());
+            this.options.onSelectAll(this, visibleItemsWithoutDisabled);
         } else if (newValue === 0 && this.options.onDeselectAll) {
-            this.options.onDeselectAll(visibleItemsWithoutDisabled.map(item => item.key), this.items.getSelectedItems());
+            this.options.onDeselectAll(this, visibleItemsWithoutDisabled);
         }
     }
 };
@@ -782,15 +780,15 @@ class SearchModule {
         if (newState === this.parent.options.states[0]) {
             if (this.parent.options.onDeselectAll) {
                 this.parent.options.onDeselectAll(
-                    visibleItems.map(([id, _]) => id),
-                    this.parent.items.getSelectedItems()
+                    this.parent,
+                    visibleItems,
                 );
             }
         } else {
             if (this.parent.options.onSelectAll) {
                 this.parent.options.onSelectAll(
-                    visibleItems.map(([id, _]) => id),
-                    this.parent.items.getSelectedItems()
+                    this.parent,
+                    visibleItems,
                 );
             }
         }
@@ -933,15 +931,15 @@ document.addEventListener('DOMContentLoaded', () => {
         selectMode: 'multiple', // 'single' or 'multiple'
         states: [0, 1, 2, 3, 4],
         maxSelectableItems: 1000,
-        onSelect: (id, item) => console.log('Selected:', id, item),
-        onDeselect: (id, item) => console.log('Deselected:', id, item),
-        onSelectGroup: (groupName, items) => console.log('Selected group:', groupName, items),
-        onDeselectGroup: (groupName, items) => console.log('Deselected group:', groupName, items),
-        onCollapseGroup: (groupName, group, groupItems) => console.log('Collapsed group:', groupName, group, groupItems),
-        onExpandGroup: (groupName, group, groupItems) => console.log('Expanded group:', groupName, group, groupItems),
+        onSelect: (checkList, id, changedItem) => console.log('Selected:', id, changedItem),
+        onDeselect: (checkList, id, changedItem) => console.log('Deselected:', id, changedItem),
+        onSelectGroup: (checkList, groupName, group, changedItems) => console.log('Selected group:', groupName, changedItems),
+        onDeselectGroup: (checkList, groupName, group, changedItems) => console.log('Deselected group:', groupName, changedItems),
+        onCollapseGroup: (checkList, groupName, group, changedItems) => console.log('Collapsed group:', groupName, group, changedItems),
+        onExpandGroup: (checkList, groupName, group, changedItems) => console.log('Expanded group:', groupName, group, changedItems),
+        onSelectAll: (checkList, changedItems) => console.log('Selected all:', changedItems),
+        onDeselectAll: (checkList, changedItems) => console.log('Deselected all:', changedItems),
 
-        onSelectAll: (checkboxes, previousSelected) => console.log('Selected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
-        onDeselectAll: (checkboxes, previousSelected) => console.log('Deselected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
         onLocalSearchResult: (searchTerm) => console.log('Search completed for term:', searchTerm),
         onSearchInputDelay: (searchTerm) => console.log('Delayed search for:', searchTerm),
         onClearSearch: () => console.log('Search cleared'),
