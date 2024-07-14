@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HpvCheckList Component</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0 auto;
+        }
+        /*  THIS IS TEST ONLY  */
+        .hpv-checklist {
+            width: 400px;
+            margin: 20px;
+            border-style: solid;
+            border-width: thin;
+            border-radius: 8px;
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="./src/css/checklist.css">
+    <script src="./src/js/checklist.js"></script>
+
+    <!-- <link rel="stylesheet" type="text/css" href="./dist/css/all.css">
+    <script src="./dist/js/all.min.js"></script> -->
+</head>
+<body>
+    <div id="checklist1"></div>
+    <script>
+        var scope = {};
+        document.addEventListener('DOMContentLoaded', () => {
+            const checklist1 = new HpvCheckList('checklist1', {
+                searchPlaceholder: "Buscar por...",
+                selectAllMainText: "Selec. Todos Visíveis",
+                selectAllGroupText: "Selec. Grupo",
+                clearSearchTooltip: "Limpar a Busca",
+                emptyText: "Nenhum item disponível",
+                disabledText: "Este item está desabilitado",
+                defaultOptGroupText: "Padrão",
+                selectMode: 'multiple', // 'single' or 'multiple'
+                states: [0, 1, 2, 3, 4],
+                maxSelectableItems: 1000,
+                onSelect: (checkList, id, changedItem) => console.log('Selected:', id, changedItem),
+                onDeselect: (checkList, id, changedItem) => console.log('Deselected:', id, changedItem),
+                onSelectGroup: (checkList, groupName, group, changedItems) => console.log('Selected group:', groupName, changedItems),
+                onDeselectGroup: (checkList, groupName, group, changedItems) => console.log('Deselected group:', groupName, changedItems),
+                onCollapseGroup: (checkList, groupName, group, changedItems) => console.log('Collapsed group:', groupName, group, changedItems),
+                onExpandGroup: (checkList, groupName, group, changedItems) => console.log('Expanded group:', groupName, group, changedItems),
+                onSelectAll: (checkList, changedItems) => console.log('Selected all:', changedItems),
+                onDeselectAll: (checkList, changedItems) => console.log('Deselected all:', changedItems),
+
+                onLocalSearchResult: (searchTerm) => console.log('Search completed for term:', searchTerm),
+                onSearchInputDelay: (searchTerm) => console.log('Delayed search for:', searchTerm),
+                onClearSearch: () => console.log('Search cleared'),
+
+                fieldMap: {
+                    keyField: 'id',
+                    labelField: 'label',
+                    valueField: 'value',
+                    optgroupField: 'optgroup',
+                    disabledField: 'disabled',
+                },
+            });
+
+            const items = [
+                { id: 1, label: 'Apple', optgroup: 'Fruits', value: 1 },
+                { id: 2, label: 'Banana', optgroup: 'Fruits', disabled: true },
+                { id: 3, label: 'Cherry', optgroup: 'Fruits', value: 2 },
+                { id: 10, label: 'Carrot', optgroup: 'Vegetables', value: 3 },
+                { id: 11, label: 'Broccoli', optgroup: 'Vegetables' },
+                { id: 12, label: 'Spinach', optgroup: 'Vegetables' },
+                { id: 20, label: 'Gol Gti 1.0', optgroup: 'Cars' },
+                { id: 21, label: 'Fiat Palio V8', optgroup: 'Cars' },
+                { id: 22, label: 'Camaro Bubblebee', optgroup: 'Cars' },
+            ];
+
+            checklist1.addItems(items);
+
+            checklist1.addItem({ 'id': 4, 'label': 'Abacaxi', value: 0 });
+            checklist1.addItem({ 'id': 5, 'label': 'Morango', value: 0 });
+            // checklist1.removeAllItems();
+
+            scope.checklist1 = checklist1;
+
+            console.log('Dropdown 1 selected items:', checklist1.items.getSelectedItems());
+            // console.log('Dropdown 2 selected items:', dropdown2.getSelectedItems());
+
+            // Example usage:
+            // checklist1.checkItem('1', scope.checklist1.MODE_INCLUSION, false);
+
+            console.log('Dropdown 1 selected IDs:', checklist1.items.getSelectedIds());
+            // console.log('Dropdown 2 selected IDs:', dropdown2.items.getSelectedIds());
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+    "name": "hpv-checklist",
+    "version": "1.0.0",
+    "author": "Danilo T Recchia",
+    "main": "dist/js/all.min.js",
+    "license": "CC-BY-NC-4.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/drecchia/hpv-checklist.git"
+    },
+    "description": "Hyper Parametrizable Vanilla checklist, the best independent checkbox selection tool.",
+    "keywords": [
+        "list",
+        "listview",
+        "checklist",
+        "dropdown",
+        "vanilla",
+        "remote data"
+    ],
+    "scripts": {
+        "build": "gulp default"
+    },
+    "devDependencies": {
+        "gulp": "^4.0.2",
+        "gulp-autoprefixer": "^8.0.0",
+        "gulp-clean-css": "^4.3.0",
+        "gulp-concat": "^2.6.1",
+        "gulp-minify": "^3.1.0"
+    },
+    "Xdependencies": {
+        "hpv-checklist": "^1.0.0"
+    }
+}

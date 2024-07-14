@@ -1,0 +1,63 @@
+Arguments: 
+  /usr/local/bin/node /opt/yarn-v1.22.19/bin/yarn.js install
+
+PATH: 
+  /vscode/vscode-server/bin/linux-x64/f1e16e1e6214d7c44d078b1f0607b2388f29d729/bin/remote-cli:/usr/local/share/nvm/current/bin:/usr/local/share/npm-global/bin:/usr/local/share/nvm/current/bin:/usr/local/share/npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/node/.local/bin
+
+Yarn version: 
+  1.22.19
+
+Node version: 
+  20.10.0
+
+Platform: 
+  linux x64
+
+Trace: 
+  SyntaxError: /workspaces/hpv-checklist/package.json: Expected double-quoted property name in JSON at position 776
+      at JSON.parse (<anonymous>)
+      at /opt/yarn-v1.22.19/lib/cli.js:1629:59
+      at Generator.next (<anonymous>)
+      at step (/opt/yarn-v1.22.19/lib/cli.js:310:30)
+      at /opt/yarn-v1.22.19/lib/cli.js:321:13
+
+npm manifest: 
+  {
+      "name": "hpv-checklist",
+      "version": "1.0.0",
+      "author": "Danilo T Recchia",
+      "main": "dist/js/all.min.js",
+      "license": "CC-BY-NC-4.0",
+      "repository": {
+          "type": "git",
+          "url": "https://github.com/drecchia/hpv-checklist.git"
+      },
+      "description": "Hyper Parametrizable Vanilla checklist, the best independent checkbox selection tool.",
+      "keywords": [
+          "list",
+          "listview",
+          "checklist",
+          "dropdown",
+          "vanilla",
+          "remote data"
+      ],
+      "scripts": {
+          "build": "gulp default"
+      },
+      "devDependencies": {
+          "gulp": "^4.0.2",
+          "gulp-autoprefixer": "^8.0.0",
+          "gulp-clean-css": "^4.3.0",
+          "gulp-concat": "^2.6.1",
+          "gulp-minify": "^3.1.0"
+      },
+      // "dependencies": {
+      //     "hpv-checklist": "^1.0.0"
+      // }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
