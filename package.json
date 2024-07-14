@@ -26,8 +26,5 @@
         "gulp-clean-css": "^4.3.0",
         "gulp-concat": "^2.6.1",
         "gulp-minify": "^3.1.0"
-    },
-    "Xdependencies": {
-        "hpv-checklist": "^1.0.0"
     }
 }
