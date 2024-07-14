@@ -1,3 +1,10 @@
+class HpvCheckListError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'HpvCheckListError';
+	}
+}
+
 class HpvCheckList {
 	constructor(containerId, options = {}) {
 		this.defaultOptions = {
@@ -43,9 +50,9 @@ class HpvCheckList {
 		this.containerId = containerId;
 
 		// Initialize sub-modules
-		this.ui = new UIModule(this);
-		this.search = new SearchModule(this);
-		this.items = new ItemsModule(this);
+		this.ui = new HpvCheckListUIModule(this);
+		this.search = new HpvChecklistSearchModule(this);
+		this.items = new HpvCheckListItemsModule(this);
 	}
 
 	// global proxy for modules
@@ -345,7 +352,7 @@ class HpvCheckList {
 	}
 };
 
-class ItemsModule {
+class HpvCheckListItemsModule {
 	constructor(p) {
 		if (!(p instanceof HpvCheckList)) {
 			throw new HpvCheckListError('Parent must be an instance of HpvCheckList');
@@ -368,13 +375,6 @@ class ItemsModule {
 		return Array.from(this.items.entries())
 			.filter(([_, item]) => item.value > 0)
 			.map(([_, item]) => item);
-	}
-
-	// to item module
-	getSelectedIds() {
-		return Array.from(this.items.entries())
-			.filter(([_, item]) => item.value > 0)
-			.map(([id, _]) => id);
 	}
 
 	getGroupNames() {
@@ -459,7 +459,7 @@ class ItemsModule {
 	}
 };
 
-class SearchModule {
+class HpvChecklistSearchModule {
 	constructor(p) {
 		if (!(p instanceof HpvCheckList)) {
 			throw new HpvCheckListError('Parent must be an instance of HpvCheckList');
@@ -598,7 +598,7 @@ class SearchModule {
 	}
 };
 
-class UIModule {
+class HpvCheckListUIModule {
 	constructor(p) {
 		if (!(p instanceof HpvCheckList)) {
 			throw new HpvCheckListError('Parent must be an instance of HpvCheckList');
