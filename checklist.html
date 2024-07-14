@@ -74,22 +74,16 @@
                 { id: 22, label: 'Camaro Bubblebee', optgroup: 'Cars' },
             ];
 
+            scope.checklist1 = checklist1;
+
             checklist1.addItems(items);
 
             checklist1.addItem({ 'id': 4, 'label': 'Abacaxi', value: 0 });
             checklist1.addItem({ 'id': 5, 'label': 'Morango', value: 0 });
             // checklist1.removeAllItems();
 
-            scope.checklist1 = checklist1;
-
             console.log('Dropdown 1 selected items:', checklist1.items.getSelectedItems());
             // console.log('Dropdown 2 selected items:', dropdown2.getSelectedItems());
-
-            // Example usage:
-            // checklist1.checkItem('1', scope.checklist1.MODE_INCLUSION, false);
-
-            console.log('Dropdown 1 selected IDs:', checklist1.items.getSelectedIds());
-            // console.log('Dropdown 2 selected IDs:', dropdown2.items.getSelectedIds());
         });
     </script>
 </body>
