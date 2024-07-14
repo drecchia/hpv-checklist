@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HpvCheckList Component</title>
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.basic.min.js" integrity="sha256-1C+i/jM9DOPZNpliy6HamyBeT7NAbYD8iRmcZ2bopmY=" crossorigin="anonymous"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -177,6 +176,20 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .hpv-checklist .custom-checkbox[data-state="1"] {
+            background-color: #2196F3;
+            border-color: #2196F3;
+        }
+
+        .hpv-checklist .custom-checkbox[data-state="2"] {
+            background-color: #FF0000;
+            border-color: #FF0000;
+        }
+
+        .hpv-checklist .custom-checkbox[data-state="1"] .checkbox-inner,
+        .hpv-checklist .custom-checkbox[data-state="2"] .checkbox-inner {
+            display: block;
+        }
 
         .hpv-checklist .custom-checkbox .checkbox-inner {
             position: absolute;
@@ -211,15 +224,13 @@
    <div style="display: flex;flex-direction: column;padding-top:50px;">
     <span>TODO:</span>
     <span>Max Nr of items</span>
-    <span>Enable/disable exclusion mode</span>
-    <span>Add/remove items after init</span>
+    <span>Enable/disable three state</span>
     <span>Remove from list after click</span>
     <span>Not mandatory optgroups</span>
     <span>virtualscroll</span>
     <span>remote list</span>
     <span>focus search-input</span>
     <span>custom render list item</span>
-    <span>List from js model</span>
    </div>
 
    <script>
@@ -240,11 +251,8 @@ class HpvCheckList {
             inclusionText: "Include in query",
             exclusionText: "Exclude from query",
             emptyText: "No items available",
-            fuseThreshold: 0.3,
             selectMode: 'multiple',
-            defaultMode: 'inclusion',
-            maxSelectableItemsInclusionMode: 1000,
-            maxSelectableItemsExclusionMode: 1000,
+            maxSelectableItems: 1000,
             onSelect: null,
             onDeselect: null,
             onSelectAll: null,
@@ -383,11 +391,11 @@ class HpvCheckList {
             const label = itemContainer.querySelector('.checkbox-label');
             const isNativeDisabled = item.nativeDisabled;
 
-            const isChecked = item.value === 1;
-            customCheckbox.setAttribute('data-checked', isChecked);
+            customCheckbox.setAttribute('data-checked', item.value > 0 ? 'true' : 'false');
+            customCheckbox.setAttribute('data-state', item.value.toString());
 
             if (isNativeDisabled) {
-                customCheckbox.setAttribute('data-disabled', true);
+                customCheckbox.setAttribute('data-disabled', 'true');
             } else {
                 customCheckbox.removeAttribute('data-disabled');
             }
@@ -407,7 +415,7 @@ class HpvCheckList {
     }
 
     updateSelectAllButtonStates() {
-        const visibleItems = Array.from(this.items.items.values()).filter(item => item.visible);
+        const visibleItems = this.items.getVisibleItems();
         const allChecked = visibleItems.every(item => 
             item.value > 0
         );
@@ -478,7 +486,8 @@ class HpvCheckList {
         const item = this.items.items.get(id);
         if (!item || !item.checkable) return;
 
-        item.value = item.value === 1 ? 0 : 1;
+        // Cycle through states: 0 -> 1 -> 2 -> 0
+        item.value = (item.value + 1) % 3;
 
         if (this.options.selectMode === 'single') {
             this.items.items.forEach((otherItem, otherId) => {
@@ -490,7 +499,7 @@ class HpvCheckList {
 
         this.updateItemStates();
 
-        if (item.value === 1 && this.options.onSelect) {
+        if (item.value !== 0 && this.options.onSelect) {
             this.options.onSelect(id, this.items.getSelectedItems());
         } else if (item.value === 0 && this.options.onDeselect) {
             this.options.onDeselect(id, this.items.getSelectedItems());
@@ -510,21 +519,22 @@ class HpvCheckList {
 
         const group = button.closest('.optgroup');
         const groupItems = this.getItemsByGroup(group);
-        const allChecked = groupItems.every((item) => {
-            if ( item.nativeDisabled ) {
-                return true;
-            } else {
-                return item.value > 0;
+        const allChecked = groupItems.every((item) => item.nativeDisabled || item.value > 0);
+        const allSecondaryChecked = groupItems.every((item) => item.nativeDisabled || item.value === 2);
+
+        const newValue = allSecondaryChecked ? 0 : (allChecked ? 2 : 1);
+
+        groupItems.forEach(item => {
+            if (!item.nativeDisabled) {
+                item.value = newValue;
             }
         });
 
-        groupItems.forEach(item => {
-            this.checkItem(item.key, !allChecked);
-        });
+        this.updateItemStates();
 
-        if (!allChecked && this.options.onSelectGroup) {
+        if (newValue > 0 && this.options.onSelectGroup) {
             this.options.onSelectGroup(group.textContent.trim(), groupItems.map(item => item.key), this.items.getSelectedItems());
-        } else if (allChecked && this.options.onDeselectGroup) {
+        } else if (newValue === 0 && this.options.onDeselectGroup) {
             this.options.onDeselectGroup(group.textContent.trim(), groupItems.map(item => item.key), this.items.getSelectedItems());
         }
     }
@@ -532,30 +542,27 @@ class HpvCheckList {
     selectAllMain() {
         if (this.options.selectMode === 'single') return;
 
-        // get all ids and filter by visible items
         const visibleItems = Array.from(this.items.items.entries())
             .filter(([_, item]) => item.visible)
             .map(([id, item]) => ({id, ...item}));
 
-        const allChecked = visibleItems.every((item) => {
-            if ( item.nativeDisabled ) {
-                return true;
-            } else {
-                return item.value > 0;
+        const allChecked = visibleItems.every((item) => item.nativeDisabled || item.value > 0);
+        const allSecondaryChecked = visibleItems.every((item) => item.nativeDisabled || item.value === 2);
+
+        const newValue = allSecondaryChecked ? 0 : (allChecked ? 2 : 1);
+
+        visibleItems.forEach(item => {
+            if (!item.nativeDisabled) {
+                this.items.items.get(item.id).value = newValue;
             }
         });
 
-        visibleItems.forEach(item => {
-            // Do not allow to uncheck disabled items
-            if ( item.nativeDisabled ) return;
+        this.updateItemStates();
 
-            this.checkItem(item.key, !allChecked);
-        });
-
-        if (!allChecked && this.options.onSelectAll) {
-            this.options.onSelectAll(visibleItems.map(item => item.key), this.items.getSelectedItems());
-        } else if (allChecked && this.options.onDeselectAll) {
-            this.options.onDeselectAll(visibleItems.map(item => item.key), this.items.getSelectedItems());
+        if (newValue > 0 && this.options.onSelectAll) {
+            this.options.onSelectAll(visibleItems.map(item => item.id), this.items.getSelectedItems());
+        } else if (newValue === 0 && this.options.onDeselectAll) {
+            this.options.onDeselectAll(visibleItems.map(item => item.id), this.items.getSelectedItems());
         }
     }
 };
@@ -568,6 +575,12 @@ class ItemsModule {
 
         this.parent = p;
         this.items = new Map(); // Store all items { id, el, internal } with their states
+    }
+
+    getVisibleItems() {
+        return Array.from(this.items.entries())
+            .filter(([_, item]) => item.visible)
+            .map(([_, item]) => item);
     }
 
     // to item module
@@ -671,13 +684,39 @@ class SearchModule {
     setupSearchInputShortcut() {
         const searchInput = this.parent.container.querySelector('.search-input');
         searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.shiftKey) {
+            if (e.key === 'Enter') {
                 e.preventDefault();
-                this.parent.selectAllMain();
-                // clear input
+                this.toggleVisibleItems(e.shiftKey ? 2 : 1);
                 this.clearSearch();
             }
         });
+    }
+
+    toggleVisibleItems(targetState) {
+        const visibleItems = this.parent.items.getVisibleItems();
+        const allInTargetState = visibleItems.every(([_, item]) => item.value === targetState);
+
+        visibleItems.forEach(([id, item]) => {
+            this.parent.items.items.get(id).value = allInTargetState ? 0 : targetState;
+        });
+
+        this.parent.updateItemStates();
+
+        if (allInTargetState) {
+            if (this.parent.options.onDeselectAll) {
+                this.parent.options.onDeselectAll(
+                    visibleItems.map(([id, _]) => id),
+                    this.parent.items.getSelectedItems()
+                );
+            }
+        } else {
+            if (this.parent.options.onSelectAll) {
+                this.parent.options.onSelectAll(
+                    visibleItems.map(([id, _]) => id),
+                    this.parent.items.getSelectedItems()
+                );
+            }
+        }
     }
 
     clearSearch() {
@@ -819,10 +858,8 @@ document.addEventListener('DOMContentLoaded', () => {
         inclusionText: "Modo: <b>Inclusão</b>",
         exclusionText: "Modo: <b>Exclusão</b>",
         emptyText: "Nenhum item disponível",
-        fuseThreshold: 0.3,
         selectMode: 'multiple', // 'single' or 'multiple'
-        maxSelectableItemsInclusionMode: 1000,  // New option
-        maxSelectableItemsExclusionMode: 1000,  // New option
+        maxSelectableItems: 1000,  // New option
         onSelect: (checkbox, previousSelected) => console.log('Selected:', checkbox, 'Previous:', previousSelected),
         onDeselect: (checkbox, previousSelected) => console.log('Deselected:', checkbox, 'Previous:', previousSelected),
         onSelectAll: (checkboxes, previousSelected) => console.log('Selected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
@@ -836,9 +873,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const items = [
-        { id: 1, label: 'Apple', optgroup: 'Fruits', checked: true },
+        { id: 1, label: 'Apple', optgroup: 'Fruits', value: 1 },
         { id: 2, label: 'Banana', optgroup: 'Fruits', disabled: true },
-        { id: 3, label: 'Cherry', optgroup: 'Fruits' },
+        { id: 3, label: 'Cherry', optgroup: 'Fruits', value: 2 },
         { id: 10, label: 'Carrot', optgroup: 'Vegetables' },
         { id: 11, label: 'Broccoli', optgroup: 'Vegetables' },
         { id: 12, label: 'Spinach', optgroup: 'Vegetables' },
