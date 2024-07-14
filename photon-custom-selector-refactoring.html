@@ -270,8 +270,9 @@ class HpvCheckList {
             onDeselectGroup: null,
             onCollapseGroup: null,
             onExpandGroup: null,
-            onSearch: null,
-            onSearchDelay: null,
+            onLocalSearchResult: null,
+            onSearchInputDelay: null,
+            onSearchInput: null,
             onClearSearch: null,
             onExclusionModeChange: null,
             items: [],
@@ -393,9 +394,11 @@ class HpvCheckList {
         checkboxList.appendChild(fragment);
     }
 
-    // refresh list state
+    // set attributes that css will use to style the items
     updateItemStates() {
         this.items.items.forEach((item, id) => {
+            if ( !item.el ) return;
+
             const itemContainer = item.el;
             const customCheckbox = itemContainer.querySelector('.custom-checkbox');
             const label = itemContainer.querySelector('.checkbox-label');
@@ -667,7 +670,25 @@ class SearchModule {
 
     setupSearchInput() {
         const searchInput = this.parent.container.querySelector('.search-input');
-        searchInput.addEventListener('input', () => this.performSearch(searchInput.value));
+        
+        searchInput.addEventListener('input', () => {
+            const value = searchInput.value;
+            const selectedItems = this.parent.items.getSelectedItems();
+
+            if (this.parent.options.onSearchInputDelay) {
+                clearTimeout(this.timeout);
+
+                this.timeout = setTimeout(() => {
+                    this.parent.options.onSearchInputDelay(value, selectedItems);
+                }, 200);
+            }
+
+            if (this.parent.options.onSearchInput) {
+                this.parent.options.onSearchInput(value, selectedItems);
+            }
+
+            this.performLocalSearch(value);
+        });
     }
 
     setupClearSearchButton() {
@@ -731,7 +752,7 @@ class SearchModule {
         }
     }
 
-    performSearch(filter) {
+    performLocalSearch(filter) {
         const lowerFilter = filter.toLowerCase();
         const optgroups = this.parent.container.querySelectorAll('.optgroup');
         let visibleItemsCount = 0;
@@ -747,7 +768,7 @@ class SearchModule {
             const groupItems = this.parent.getItemsByGroup(group);
             const visibleGroupItems = groupItems.filter(item => item.visible);
             
-            if (visibleGroupItems.length > 0 || group.querySelector('span').textContent.toLowerCase().includes(lowerFilter)) {
+            if (visibleGroupItems.length > 0 || groupName.toLowerCase().includes(lowerFilter)) {
                 group.style.display = '';
                 group.classList.remove('collapsed');
                 const ul = group.nextElementSibling;
@@ -765,15 +786,8 @@ class SearchModule {
             this.parent.ui.hideStatus();
         }
 
-        if (this.parent.options.onSearch) {
-            this.parent.options.onSearch(filter, this.parent.items.getSelectedItems());
-        }
-
-        if (this.parent.options.onSearchDelay) {
-            clearTimeout(this.timeout);
-            this.timeout = setTimeout(() => {
-                this.parent.options.onSearchDelay(filter, this.parent.items.getSelectedItems());
-            }, 200);
+        if (this.parent.options.onLocalSearchResult) {
+            this.parent.options.onLocalSearchResult(filter, this.parent.items.getSelectedItems());
         }
 
         // this.updateItemStates();
@@ -834,7 +848,7 @@ class UIModule {
     createDropdownContainer() {
         // set class hpv-checklist to this.container
         this.parent.container.classList.add('hpv-checklist');
-        const { searchPlaceholder, clearSearchTooltip, selectAllMainText, emptyText } = this.parent.options;
+        const { searchPlaceholder, clearSearchTooltip, selectAllMainText, emptyText, selectMode } = this.parent.options;
 
         const dropdownHTML = `
             <div class="search-container">
@@ -843,7 +857,7 @@ class UIModule {
             </div>
             <div class="hpv-checklist-content">
                 <div class="hpv-checklist-btn-group">
-                    <button class="select-all-main">${selectAllMainText}</button>
+                    <button class="select-all-main ${selectMode == 'single' ? 'select-single-mode' : ''}">${selectAllMainText}</button>
                 </div>
                 <div class="hpv-checklist-status-container">
                     <span>${emptyText}</span>    
@@ -866,7 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearSearchTooltip: "Limpar a Busca",
         emptyText: "Nenhum item disponível",
         disabledText: "Este item está desabilitado",
-        selectMode: 'multiple', // 'single' or 'multiple'
+        selectMode: 'single', // 'single' or 'multiple'
         states: [0, 1, 2],
         maxSelectableItems: 1000,
         onSelect: (id, item) => console.log('Selected:', id, item),
@@ -878,8 +892,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         onSelectAll: (checkboxes, previousSelected) => console.log('Selected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
         onDeselectAll: (checkboxes, previousSelected) => console.log('Deselected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
-        // onSearch: (searchTerm) => console.log('Searched for:', searchTerm),
-        onSearchDelay: (searchTerm) => console.log('Delayed search for:', searchTerm),
+        onLocalSearchResult: (searchTerm) => console.log('Search completed for term:', searchTerm),
+        onSearchInputDelay: (searchTerm) => console.log('Delayed search for:', searchTerm),
         onClearSearch: () => console.log('Search cleared'),
     });
 
