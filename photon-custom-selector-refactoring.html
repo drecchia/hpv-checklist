@@ -16,10 +16,19 @@
             border-width: thin;
             border-radius: 8px;
         }
+        .hpv-checklist .hr-no-optgroups {
+            border-color: #cfcfcf;
+            border-width: thin;
+            border-top-style: none;
+            margin-top: 10px;
+        }
         .hpv-checklist ul {
             list-style-type: none;
             padding: 0;
             margin: 0;
+        }
+        .hpv-checklist ul:last-child {
+            padding-bottom: 10px;
         }
         .hpv-checklist li {
             color: #303438;
@@ -269,6 +278,7 @@ class HpvCheckList {
             clearSearchTooltip: "Clear Search",
             emptyText: "No items available",
             disabledText: "This item is disabled",
+            defaultOptGroupText: "Default",
             selectMode: 'multiple',
             maxSelectableItems: 1000,
             states: [0, 1], // from 0 to 4
@@ -376,28 +386,40 @@ class HpvCheckList {
     }
 
     renderItems() {
+        const { defaultOptGroupText, selectMode, selectAllGroupText, disabledClass } = this.options;
+
         const fragment = document.createDocumentFragment();
         const checkboxList = this.container.querySelector('.hpv-checklist-checkbox-list');
         checkboxList.innerHTML = '';
 
         const groupedItems = this.items.getGroupedItems();
+        // count unique names in groupedItems.optgroup
+        const numberOfGroups = this.items.getGroupNames().length;
 
         for (const [groupName, items] of Object.entries(groupedItems)) {
-            const optgroup = document.createElement('div');
-            optgroup.className = 'optgroup';
-            optgroup.innerHTML = `
-                <span>${groupName}</span>
-                <button class="select-all-group ${this.options.selectMode == 'single' ? 'select-single-mode' : ''}">${this.options.selectAllGroupText}</button>
-            `;
+            if ( groupName == defaultOptGroupText && numberOfGroups == 1 ) {
+                // hide group name if only one group
+                // plot an hr to separate items
+                const hr = document.createElement('hr');
+                hr.className = 'hr-no-optgroups';
+                fragment.appendChild(hr);
+            } else {
+                const optgroup = document.createElement('div');
+                optgroup.className = 'optgroup';
+                optgroup.innerHTML = `
+                    <span>${groupName}</span>
+                    <button class="select-all-group ${selectMode == 'single' ? 'select-single-mode' : ''}">${selectAllGroupText}</button>
+                `;
 
-            optgroup.setAttribute('group-name', groupName);
+                optgroup.setAttribute('group-name', groupName);
 
-            fragment.appendChild(optgroup);
+                fragment.appendChild(optgroup);
+            }
 
             const ul = document.createElement('ul');
             items.forEach((item) => {
                 const li = document.createElement('li');
-                li.className = item.disabled ? this.options.disabledClass : '';
+                li.className = item.disabled ? disabledClass : '';
                 li.innerHTML = `
                     <div class="custom-checkbox" id="${item.key}" ${item.disabled ? 'data-disabled' : ''} ${item.checkedInclusion ? 'data-checked' : ''}>
                         <div class="checkbox-inner"></div>
@@ -614,17 +636,23 @@ class ItemsModule {
             .map(([id, _]) => id);
     }
 
+    getGroupNames() {
+        // return all unique optgroup values
+        return Array.from(new Set(Array.from(this.items.values()).map(item => item.optgroup)));
+    }
+
     addMultiple(userItems) {
         userItems.forEach(item => this.add(item, false));
     }
 
     add(item, fireAfterChange = true) {
-        const { keyField, labelField, valueField, disabledField, optgroupField } = this.parent.options.fieldMap;
+        const { defaultOptGroupText, fieldMap } = this.parent.options;
+        const { keyField, labelField, valueField, disabledField, optgroupField } = fieldMap;
 
         const key = item[keyField] + ''; // protection
         const label = item[labelField];
         let value = item[valueField] || 0;
-        const optgroup = item[optgroupField];
+        const optgroup = item[optgroupField] || defaultOptGroupText;
         const disabled = item[disabledField] || false;
 
         // Ensure the value is within the allowed states
@@ -901,6 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearSearchTooltip: "Limpar a Busca",
         emptyText: "Nenhum item disponível",
         disabledText: "Este item está desabilitado",
+        defaultOptGroupText: "Padrão",
         selectMode: 'multiple', // 'single' or 'multiple'
         states: [0, 1, 2, 3, 4],
         maxSelectableItems: 1000,
@@ -916,6 +945,14 @@ document.addEventListener('DOMContentLoaded', () => {
         onLocalSearchResult: (searchTerm) => console.log('Search completed for term:', searchTerm),
         onSearchInputDelay: (searchTerm) => console.log('Delayed search for:', searchTerm),
         onClearSearch: () => console.log('Search cleared'),
+
+        fieldMap: {
+            keyField: 'id',
+            labelField: 'label',
+            valueField: 'value',
+            optgroupField: 'optgroup',
+            disabledField: 'disabled',
+        },
     });
 
     const items = [
@@ -932,7 +969,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     checklist1.addItems(items);
 
-    checklist1.addItem({ 'id': 4, 'label': 'Abacaxi', 'optgroup': 'Fruits', value: 10 });
+    checklist1.addItem({ 'id': 4, 'label': 'Abacaxi', value: 0 });
+    checklist1.addItem({ 'id': 5, 'label': 'Morango', value: 0 });
     // checklist1.removeAllItems();
 
     scope.checklist1 = checklist1;
