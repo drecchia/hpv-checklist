@@ -112,13 +112,16 @@
             max-height: 0;
             opacity: 0;
         }
+        .hpv-checklist .select-all-group.select-single-mode {
+            visibility: hidden;
+        }
         .hpv-checklist .select-all-group {
             background: none;
             border: none;
             cursor: pointer;
             color: #2196F3;
             font-size: 12px;
-            visibility: hidden;
+            visibility: visible;
         }
         .hpv-checklist .hpv-checklist-btn-group button {
             background: none;
@@ -228,6 +231,7 @@
 
    <div style="display: flex;flex-direction: column;padding-top:50px;">
     <span>TODO:</span>
+    <span>Single mode nao esta funcionando com states</span>
     <span>Max Nr of items</span>
     <span>Remove from list after click</span>
     <span>Not mandatory optgroups</span>
@@ -254,6 +258,7 @@ class HpvCheckList {
             selectAllGroupText: "Select All",
             clearSearchTooltip: "Clear Search",
             emptyText: "No items available",
+            disabledText: "This item is disabled",
             selectMode: 'multiple',
             maxSelectableItems: 1000,
             states: [0, 1], // from 0 to 4
@@ -266,6 +271,7 @@ class HpvCheckList {
             onCollapseGroup: null,
             onExpandGroup: null,
             onSearch: null,
+            onSearchDelay: null,
             onClearSearch: null,
             onExclusionModeChange: null,
             items: [],
@@ -322,20 +328,20 @@ class HpvCheckList {
         this.ui.afterAddOrRemoveItems();
     }
     
-    checkItem(id, check = true) {
-        const item = this.items.items.get(id);
-        // Do not allow to change disabled items
-        if ( item.nativeDisabled ) return;
+    // checkItem(id, check = true) {
+    //     const item = this.items.items.get(id);
+    //     // Do not allow to change disabled items
+    //     if ( item.nativeDisabled ) return;
 
-        if (item) {
-            item.value = check ? 1 : 0;
-            this.items.items.set(id, item);
-            // render items
-            this.updateItemStates();
-        } else {
-            console.warn(`Item with id "${id}" not found`);
-        }
-    }
+    //     if (item) {
+    //         item.value = check ? 1 : 0;
+    //         this.items.items.set(id, item);
+    //         // render items
+    //         this.updateItemStates();
+    //     } else {
+    //         console.warn(`Item with id "${id}" not found`);
+    //     }
+    // }
 
     setItemVisibility(id, visible) {
         const item = this.items.items.get(id);
@@ -360,7 +366,7 @@ class HpvCheckList {
             optgroup.className = 'optgroup';
             optgroup.innerHTML = `
                 <span>${groupName}</span>
-                <button class="select-all-group">${this.options.selectAllGroupText}</button>
+                <button class="select-all-group ${this.options.selectMode == 'single' ? 'select-single-mode' : ''}">${this.options.selectAllGroupText}</button>
             `;
 
             optgroup.setAttribute('group-name', groupName);
@@ -407,36 +413,10 @@ class HpvCheckList {
             itemContainer.classList.toggle(this.options.disabledClass, isNativeDisabled);
 
             if (customCheckbox.hasAttribute('data-disabled')) {
-                label.title = isNativeDisabled ? 'This item is disabled' : '';
+                label.title = isNativeDisabled ? this.options.disabledText : '';
             } else {
                 label.title = '';
             }
-
-            item.checkable = !isNativeDisabled;
-        });
-
-        this.updateSelectAllButtonStates();
-    }
-
-    updateSelectAllButtonStates() {
-        const visibleItems = this.items.getVisibleItems();
-        const allChecked = visibleItems.every(item => 
-            item.value > 0
-        );
-        
-        // const selectAllMain = this.container.querySelector('.select-all-main');
-        // selectAllMain.disabled = allChecked || visibleItems.length === 0;
-
-        const optgroups = this.container.querySelectorAll('.optgroup');
-        optgroups.forEach(group => {
-            const selectAllGroup = group.querySelector('.select-all-group');
-            const groupItems = this.getItemsByGroup(group).filter(item => item.visible);
-            const allGroupChecked = groupItems.every(item => 
-                item.value > 0
-            );
-            
-            //selectAllGroup.disabled = allGroupChecked || groupItems.length === 0;
-            selectAllGroup.style.visibility = (this.options.selectMode !== 'single' && groupItems.length > 0) ? 'visible' : 'hidden';
         });
     }
 
@@ -453,6 +433,8 @@ class HpvCheckList {
     setupCollapsibleOptgroups() {
         const optgroups = this.container.querySelectorAll('.optgroup');
         for (let group of optgroups) {
+            const groupName = this.getGroupName(group);
+
             group.addEventListener('click', (e) => {
                 if (e.target.tagName.toLowerCase() === 'button') return;
                 const isCollapsing = !group.classList.contains('collapsed');
@@ -465,9 +447,9 @@ class HpvCheckList {
                 selectAllBtn.style.visibility = isCollapsing ? 'hidden' : 'visible';
 
                 if (isCollapsing && this.options.onCollapseGroup) {
-                    this.options.onCollapseGroup(group);
+                    this.options.onCollapseGroup(groupName, group, this.getItemsByGroup(groupName));
                 } else if (!isCollapsing && this.options.onExpandGroup) {
-                    this.options.onExpandGroup(group);
+                    this.options.onExpandGroup(groupName, group, this.getItemsByGroup(groupName));
                 }
             });
         }
@@ -488,7 +470,7 @@ class HpvCheckList {
 
     toggleItemSelection(id) {
         const item = this.items.items.get(id);
-        if (!item || !item.checkable) return;
+        if (!item || item.nativeDisabled) return;
 
         const currentStateIndex = this.options.states.indexOf(item.value);
         const nextStateIndex = (currentStateIndex + 1) % this.options.states.length;
@@ -505,31 +487,33 @@ class HpvCheckList {
         this.updateItemStates();
 
         if (item.value !== this.options.states[0] && this.options.onSelect) {
-            this.options.onSelect(id, this.items.getSelectedItems());
+            this.options.onSelect(id, item);
         } else if (item.value === this.options.states[0] && this.options.onDeselect) {
-            this.options.onDeselect(id, this.items.getSelectedItems());
+            this.options.onDeselect(id, item);
         }
     }
 
-    getItemsByGroup(group) {
-        // get attribute group-name
-        const groupName = group.getAttribute('group-name');
-
+    getItemsByGroup(groupName) {
         // find in this.items items where item.optgroup = groupName
         return Array.from(this.items.items.values()).filter(item => item.optgroup === groupName);
+    }
+
+    getGroupName(groupEl) {
+        return groupEl.getAttribute('group-name');
     }
 
     selectAllGroup(button) {
         if (this.options.selectMode === 'single') return;
 
         const group = button.closest('.optgroup');
-        const items = this.getItemsByGroup(group);
+        const groupName = this.getGroupName(group);
+        const items = this.getItemsByGroup(groupName);
         const newValue = this.goToNextState(items);
 
         if (newValue !== this.options.states[0] && this.options.onSelectGroup) {
-            this.options.onSelectGroup(group.textContent.trim(), items.map(item => item.key), this.items.getSelectedItems());
+            this.options.onSelectGroup(groupName, this.items.getSelectedItems());
         } else if (newValue === this.options.states[0] && this.options.onDeselectGroup) {
-            this.options.onDeselectGroup(group.textContent.trim(), items.map(item => item.key), this.items.getSelectedItems());
+            this.options.onDeselectGroup(groupName, this.items.items);
         }
     }
 
@@ -675,6 +659,7 @@ class SearchModule {
         }
 
         this.parent = p;
+        this.timeout = null;
         this.setupSearchInput();
         this.setupClearSearchButton();
         this.setupSearchInputShortcut();
@@ -784,8 +769,14 @@ class SearchModule {
             this.parent.options.onSearch(filter, this.parent.items.getSelectedItems());
         }
 
+        if (this.parent.options.onSearchDelay) {
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+                this.parent.options.onSearchDelay(filter, this.parent.items.getSelectedItems());
+            }, 200);
+        }
+
         // this.updateItemStates();
-        // this.updateSelectAllButtonStates();
     }
 
     // ... (other search-related methods)
@@ -874,18 +865,21 @@ document.addEventListener('DOMContentLoaded', () => {
         selectAllGroupText: "Selec. Grupo",
         clearSearchTooltip: "Limpar a Busca",
         emptyText: "Nenhum item disponível",
+        disabledText: "Este item está desabilitado",
         selectMode: 'multiple', // 'single' or 'multiple'
         states: [0, 1, 2],
         maxSelectableItems: 1000,
-        onSelect: (checkbox, previousSelected) => console.log('Selected:', checkbox, 'Previous:', previousSelected),
-        onDeselect: (checkbox, previousSelected) => console.log('Deselected:', checkbox, 'Previous:', previousSelected),
+        onSelect: (id, item) => console.log('Selected:', id, item),
+        onDeselect: (id, item) => console.log('Deselected:', id, item),
+        onSelectGroup: (groupName, items) => console.log('Selected group:', groupName, items),
+        onDeselectGroup: (groupName, items) => console.log('Deselected group:', groupName, items),
+        onCollapseGroup: (groupName, group, groupItems) => console.log('Collapsed group:', groupName, group, groupItems),
+        onExpandGroup: (groupName, group, groupItems) => console.log('Expanded group:', groupName, group, groupItems),
+
         onSelectAll: (checkboxes, previousSelected) => console.log('Selected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
         onDeselectAll: (checkboxes, previousSelected) => console.log('Deselected all:', checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
-        onSelectGroup: (group, checkboxes, previousSelected) => console.log('Selected group:', group.textContent, checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
-        onDeselectGroup: (group, checkboxes, previousSelected) => console.log('Deselected group:', group.textContent, checkboxes.map(cb => cb.id), 'Previous:', previousSelected),
-        onCollapseGroup: (group) => console.log('Collapsed group:', group.textContent),
-        onExpandGroup: (group) => console.log('Expanded group:', group.textContent),
-        onSearch: (searchTerm) => console.log('Searched for:', searchTerm),
+        // onSearch: (searchTerm) => console.log('Searched for:', searchTerm),
+        onSearchDelay: (searchTerm) => console.log('Delayed search for:', searchTerm),
         onClearSearch: () => console.log('Search cleared'),
     });
 
