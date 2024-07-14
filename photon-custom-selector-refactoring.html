@@ -112,6 +112,9 @@
             max-height: 0;
             opacity: 0;
         }
+        .hpv-checklist .select-all-main.select-single-mode {
+            display: none;
+        }
         .hpv-checklist .select-all-group.select-single-mode {
             visibility: hidden;
         }
@@ -880,8 +883,8 @@ document.addEventListener('DOMContentLoaded', () => {
         clearSearchTooltip: "Limpar a Busca",
         emptyText: "Nenhum item disponível",
         disabledText: "Este item está desabilitado",
-        selectMode: 'single', // 'single' or 'multiple'
-        states: [0, 1, 2],
+        selectMode: 'multiple', // 'single' or 'multiple'
+        states: [0, 1, 2, 3, 4],
         maxSelectableItems: 1000,
         onSelect: (id, item) => console.log('Selected:', id, item),
         onDeselect: (id, item) => console.log('Deselected:', id, item),
