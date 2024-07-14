@@ -3,7 +3,7 @@
 
 ---
 
-Design to address flexibility of all environments with no dependecies. Hpv-Checklist is a _First Class_ solution for webapps checkbox list. It is very small (~8Kb) and customizable through a wide range of options.
+Design to offer flexibility across all environments with no dependecies. Hpv-Checklist is a _First Class_ solution for webapps checkbox lists. Unlike other options, it is not tied to a select or floating UI. It is very small (~8Kb) and customizable through a wide range of options.
 
 
 [Online Demo](https://jsfiddle.net/LINK_HERE/)
