@@ -19,11 +19,6 @@
             justify-content: left;
             align-items: flex-start;
         }
-        #button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
         #dropdown {
             display: none;
             position: absolute;
@@ -36,7 +31,6 @@
         }
         .select {
             position: relative;
-            overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
             border-width: thin;
@@ -47,9 +41,10 @@
             margin-bottom: 10px;
             border-radius: 4px;
             cursor: pointer;
-            /* display: flex;
+            display: flex;
             flex-direction: row;
-            gap: 5px; */
+            flex-wrap: wrap;
+            row-gap: 5px;
             /* Disable text selection */
             user-select: none;
             -webkit-user-select: none; /* Safari */

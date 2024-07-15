@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Floating UI Dropdown Example</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.6.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.7"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hpv-checklist@1.0.0/dist/css/all.css" integrity="sha256-O/R8owX3xVB8jgP2RAIfOfYqjL+C9+3sVK4+TD0EX4s=" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/hpv-checklist@1.0.0/dist/js/all.min.js" integrity="sha256-SQuVIYfgZI/wuP2qhjq7zmvsL5UvwcQvGGP8NOnFtyc=" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            margin: 20px;
+            display: flex;
+            justify-content: left;
+            align-items: flex-start;
+        }
+        #dropdown {
+            display: none;
+            position: absolute;
+            min-width: 360px;
+            background-color: white;
+            border-radius: 4px;
+            border-color: #d9d9d9;
+            border-style: solid;
+            border-width: thin;
+        }
+        .select {
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            border-width: thin;
+            border-color: #a5a5a5;
+            border-style: solid;
+            padding: 5px;
+            padding-right: 40px; /* Increased to make room for the larger chevron */
+            margin-bottom: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            /* display: flex;
+            flex-direction: row;
+            gap: 5px; */
+            /* Disable text selection */
+            user-select: none;
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+        }
+
+        .select::after {
+            content: '';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;  /* Increased from 10px */
+            height: 16px; /* Increased from 10px */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a5a5a5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            pointer-events: none;
+        }
+        .hpv-checklist .search-container {
+            position: relative;
+            width: calc(100% - 20px);
+            margin: 10px;
+        }
+        .hpv-checklist .hpv-checklist-content {
+            overflow-y: scroll;
+            max-height: 300px;
+            padding-top: 0;
+        }
+
+        .green {
+            font-size: 12px;
+            color: #277127;
+        }
+        .red {
+            font-size: 12px;
+            color: #bf2222;
+        }
+    </style>
+</head>
+<body>
+    <div style="display: flex; flex-direction: column;width: 360px;">
+        <div id="selectedItems" class="select">Items:</div>
+    </div>
+    <div id="dropdown">
+        <div id="checklistContainer"></div>
+    </div>
+
+    <script>
+        const select = document.querySelector('.select');
+        const dropdown = document.getElementById('dropdown');
+        let isOpen = false;
+        let checklist1;
+
+        // on domready
+        document.addEventListener('DOMContentLoaded', () => {
+            createChecklist();
+        });
+
+        const recalculateLabel = (checkList) => {
+            console.log('Recalculating label');
+            const selected = checkList.items.getSelectedItems();
+            // add every selected.id to the label
+            document.getElementById('selectedItems').innerHTML = '';
+            
+            selected.forEach((item, idx) => {
+                let label = item.label;
+
+                if ( item.value == 1 ) {
+                    label = `<span class="green">${item.label}</span>`;
+                } else if ( item.value == 2 ) {
+                    label = `<span class="red">${item.label}</span>`;
+                }
+
+                // if not last item, add a comma
+                if ( idx < selected.length - 1 ) {
+                    label += ', ';
+                }
+                
+                document.getElementById('selectedItems').innerHTML += `${label}`;
+            });
+
+            if ( selected.length == 0 ) {
+                document.getElementById('selectedItems').innerHTML = 'No items selected';
+            }
+        };
+
+        function createChecklist() {
+            checklist1 = new HpvCheckList('checklistContainer', {
+                searchPlaceholder: "Buscar por...",
+                selectAllMainText: "Selec. Todos Visíveis",
+                selectAllGroupText: "Selec. Grupo",
+                clearSearchTooltip: "Limpar a Busca",
+                emptyText: "Nenhum item disponível",
+                disabledText: "Este item está desabilitado",
+                defaultOptGroupText: "Padrão",
+                selectMode: 'multiple', // 'single' or 'multiple'
+                states: [0, 1, 2],
+                maxSelectableItems: 1000,
+                searchMode: 'local',
+                onSelect: recalculateLabel,
+                onDeselect: recalculateLabel,
+                onSelectGroup: recalculateLabel,
+                onDeselectGroup: recalculateLabel,
+                onCollapseGroup: (checkList, groupName, group, changedItems) => console.log('Collapsed group:', groupName, group, changedItems),
+                onExpandGroup: (checkList, groupName, group, changedItems) => console.log('Expanded group:', groupName, group, changedItems),
+                onSelectAll: recalculateLabel,
+                onDeselectAll: recalculateLabel,
+
+                onLocalSearchResult: (checkList, searchTerm, visibleItems) => console.log('Search completed for term:', searchTerm),
+                onSearchInputDelay: (checkList, searchTerm, visibleItems) => console.log('Delayed search for:', searchTerm),
+                onClearSearch: () => console.log('Search cleared'),
+
+                fieldMap: {
+                    keyField: 'id',
+                    labelField: 'label',
+                    valueField: 'value',
+                    optgroupField: 'optgroup',
+                    disabledField: 'disabled',
+                },
+            });
+
+            const items = [
+                { id: 1, label: 'Apple', optgroup: 'Fruits', value: 1 },
+                { id: 2, label: 'Banana', optgroup: 'Fruits', disabled: true },
+                { id: 3, label: 'Cherry', optgroup: 'Fruits', value: 2 },
+                { id: 10, label: 'Carrot', optgroup: 'Vegetables', value: 3 },
+                { id: 11, label: 'Broccoli', optgroup: 'Vegetables' },
+                { id: 12, label: 'Spinach', optgroup: 'Vegetables' },
+                { id: 20, label: 'Gol Gti 1.0', optgroup: 'Cars' },
+                { id: 21, label: 'Fiat Palio V8', optgroup: 'Cars' },
+                { id: 22, label: 'Camaro Bubblebee', optgroup: 'Cars' },
+            ];
+
+            checklist1.addItems(items);
+
+            // add every selected.id to the label
+            recalculateLabel(checklist1);
+        }
+
+        function update() {
+            FloatingUIDOM.computePosition(select, dropdown, {
+                placement: 'bottom-start',
+                middleware: [
+                    FloatingUIDOM.offset(6),
+                    FloatingUIDOM.flip(),
+                    FloatingUIDOM.shift()
+                ]
+            }).then(({x, y}) => {
+                Object.assign(dropdown.style, {
+                    left: `${x}px`,
+                    top: `${y}px`,
+                });
+            });
+        }
+
+        function toggleDropdown() {
+            isOpen = !isOpen;
+            dropdown.style.display = isOpen ? 'block' : 'none';
+            if (isOpen) {
+                update();
+            }
+        }
+
+        select.addEventListener('click', toggleDropdown);
+        window.addEventListener('resize', update);
+        window.addEventListener('scroll', update);
+    </script>
+</body>
+</html>
