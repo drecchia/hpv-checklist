@@ -34,6 +34,7 @@ class HpvCheckList {
 			onExclusionModeChange: null,
 			itemRendererFn: null,
 			groupRendererFn: null,
+			searchInputRendererFn: null,
 			items: [],
 			disabledClass: 'hpv-checklist-disabled',
 			fieldMap: {
@@ -692,14 +693,23 @@ class HpvCheckListUIModule {
 			clearSearchTooltip,
 			selectAllMainText,
 			emptyText,
-			selectMode
+			selectMode,
+			searchInputRendererFn
 		} = this.parent.options;
 
+		if ( searchInputRendererFn ) {
+			const searchInputEl = searchInputRendererFn(searchPlaceholder, clearSearchTooltip);
+			this.parent.container.appendChild(searchInputEl);
+		} else {
+			const searchInputHtml = `
+				<div class="search-container">
+					<input type="text" class="search-input" placeholder="${searchPlaceholder}">
+					<button class="clear-search" title="${clearSearchTooltip}">&times;</button>
+				</div>`;
+			this.parent.container.innerHTML += searchInputHtml;
+		}
+
 		const dropdownHTML = `
-			<div class="search-container">
-				<input type="text" class="search-input" placeholder="${searchPlaceholder}">
-				<button class="clear-search" title="${clearSearchTooltip}">&times;</button>
-			</div>
 			<div class="hpv-checklist-content">
 				<div class="hpv-checklist-btn-group">
 					<button class="select-all-main ${selectMode == 'single' ? 'select-single-mode' : ''}">${selectAllMainText}</button>
