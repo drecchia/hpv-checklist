@@ -97,6 +97,7 @@
     display: flex;
     margin-left: 10px;
     width: 100%;
+    justify-content: space-between;
 }
 .hpv-checklist .optgroup::before {
     content: '▼';

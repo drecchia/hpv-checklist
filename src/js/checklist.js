@@ -253,12 +253,17 @@ class HpvCheckList {
 				if (e.target.tagName.toLowerCase() === 'button') return;
 				const isCollapsing = !group.classList.contains('collapsed');
 				group.classList.toggle('collapsed');
+				
 				const ul = group.nextElementSibling;
 				if (ul.tagName.toLowerCase() === 'ul') {
 					ul.style.display = isCollapsing ? 'none' : '';
 				}
+				
 				const selectAllBtn = group.querySelector('.select-all-group');
-				selectAllBtn.style.visibility = isCollapsing ? 'hidden' : 'visible';
+				// check if do not have class select-single-mode
+				if (!selectAllBtn.classList.contains('select-single-mode')) {;
+					selectAllBtn.style.visibility = isCollapsing ? 'hidden' : 'visible';
+				}
 
 				if (isCollapsing && this.options.onCollapseGroup) {
 					this.options.onCollapseGroup(this, groupName, group, this.getItemsByGroup(groupName));
