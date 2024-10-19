@@ -50,7 +50,8 @@
 }
 .hpv-checklist .search-container {
     position: relative;
-    width: 100%;
+    width: calc(100% - 8px);
+    padding: 4px;
 }
 .hpv-checklist .search-input {
     width: 100%;
