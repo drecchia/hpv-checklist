@@ -61,11 +61,13 @@
     <br>
     <button onclick="scope.checklist1.removeAllItems()">Remove All Items</button>
     <br>
-    <button onclick="scope.checklist1.addItem({ 'id': 100, 'label': 'Potato', value: 0, icon: 'https://www.svgrepo.com/show/398113/potato.svg' })">Add Potato</button>
-    <br>
     <button onclick="scope.checklist1.addItem({ 'id': 4, 'label': 'Pineapple', optgroup: 'Fruits', value: 0 })">Add Pineapple</button>
     <br>
     <button onclick="scope.checklist1.addItem({ 'id': 5, 'label': 'Strawberry', optgroup: 'Fruits', value: 0, icon: 'https://www.svgrepo.com/show/489698/strawberry.svg' })">Add Strawberry</button>
+    <br>
+    <button onclick="scope.checklist1.addItem({ 'id': 100, 'label': 'Potato', value: 0, icon: 'https://www.svgrepo.com/show/398113/potato.svg' })">Add Potato</button>
+    <br>
+    <button onclick="scope.checklist1.removeItem(100);">Remove Potato</button>
     <br>
     <script>
         var scope = {};

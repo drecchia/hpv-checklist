@@ -9,7 +9,6 @@ support remote search
 
 BUGS:
 -----
-Remove item by id not working
 Updating orginal item to disable do not reflect rendered elements, not event calling current refresh methods
 Option Group still displays select. Group even on single mode.
 

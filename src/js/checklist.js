@@ -82,13 +82,13 @@ class HpvCheckList {
 	}
 
 	removeItem(id) {
-		const item = this.items.items.get(id);
+		const item = this.items.items.get(id + '');
 
 		if (item && item.el) {
 			item.hiddenBySelection = true;
 			item.el.classList.add('fade-out');
 			setTimeout(() => {
-				this.items.remove(id);
+				this.items.remove(id + '');
 				this.ui.afterAddOrRemoveItems();
 			}, 300); // Match this with the CSS transition duration
 		}
