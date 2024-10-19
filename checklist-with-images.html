@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HpvCheckList Component</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0 auto;
+        }
+        /*  THIS IS TEST ONLY  */
+        .hpv-checklist {
+            width: 400px;
+            margin: 20px;
+            border-style: solid;
+            border-width: thin;
+            border-radius: 8px;
+        }
+        /* make image of disabled items less visible */
+        .hpv-checklist .hpv-checklist-disabled img {
+            opacity: .3;
+        }
+        .hpv-checklist .hpv-checklist-checkbox-list img {
+            min-width: 32px;
+        }
+        /* make checkbox invisible */
+        .hpv-checklist .hpv-checklist-checkbox-list .custom-checkbox {
+            display: none;
+        }
+        /* set background color for selected items */
+        .hpv-checklist .hpv-checklist-checkbox-list li:has([data-checked="true"]) {
+            background-color: #cef3ce;
+            /* box-shadow: inset 0px 0px 7px 0px green; */
+            /* background: linear-gradient(to right, transparent, #00bb00); */
+            /* background: linear-gradient(to right, transparent 70%, #00bb00 99%); */
+            border-left-color: #00bb00;
+            border-left-style: solid;
+            border-left-width: 10px;
+        }
+        /* set previous state, so we can make a transition */
+        .hpv-checklist .hpv-checklist-checkbox-list li {
+            border-left-color: transparent;
+            border-left-style: solid;
+            border-left-width: 0;
+            transition: border-left-color 0.3s ease, border-left-width 0.3s ease;
+        }
+    </style>
+    <link rel="stylesheet" type="text/css" href="./src/css/checklist.css">
+    <script src="./src/js/checklist.js"></script>
+
+    <!-- <link rel="stylesheet" type="text/css" href="./dist/css/all.css">
+    <script src="./dist/js/all.min.js"></script> -->
+</head>
+<body>
+    <div id="checklist1"></div>
+    <br>
+    <button onclick="scope.checklist1.addItems(scope.items)">Add Many Items</button>
+    <br>
+    <button onclick="scope.checklist1.addItems(scope.items2)">Add Many Items 2</button>
+    <br>
+    <button onclick="scope.checklist1.removeAllItems()">Remove All Items</button>
+    <br>
+    <button onclick="scope.checklist1.addItem({ 'id': 100, 'label': 'Potato', value: 0, icon: 'https://www.svgrepo.com/show/398113/potato.svg' })">Add Potato</button>
+    <br>
+    <button onclick="scope.checklist1.addItem({ 'id': 4, 'label': 'Pineapple', optgroup: 'Fruits', value: 0 })">Add Pineapple</button>
+    <br>
+    <button onclick="scope.checklist1.addItem({ 'id': 5, 'label': 'Strawberry', optgroup: 'Fruits', value: 0, icon: 'https://www.svgrepo.com/show/489698/strawberry.svg' })">Add Strawberry</button>
+    <br>
+    <script>
+        var scope = {};
+        scope.items = [
+            { id: 1, label: 'Apple', optgroup: 'Fruits', value: 1, icon: "https://www.svgrepo.com/show/530203/apple.svg" },
+            { id: 2, label: 'Banana', optgroup: 'Fruits', disabled: true, icon: "https://www.svgrepo.com/show/530359/banana.svg" },
+            { id: 3, label: 'Cherry', optgroup: 'Fruits', value: 0, icon: "https://www.svgrepo.com/show/530361/cherry.svg" },
+            { id: 10, label: 'Carrot', optgroup: 'Vegetables', value: 0, icon: "https://www.svgrepo.com/show/485247/carrot.svg" },
+            { id: 11, label: 'Broccoli', optgroup: 'Vegetables', icon: "https://www.svgrepo.com/show/276189/broccoli.svg" },
+        ];
+
+        scope.items2 = [
+            { id: 12, label: 'Spinach', optgroup: 'Vegetables', icon: "https://www.svgrepo.com/show/396869/leafy-green.svg" },
+            { id: 20, label: 'Gol Gti 1.0', optgroup: 'Cars', icon: "https://www.svgrepo.com/show/513282/car.svg" },
+            { id: 21, label: 'Fiat Palio V8', optgroup: 'Cars', icon: "https://www.svgrepo.com/show/499718/car.svg" },
+            { id: 22, label: 'Camaro Bubblebee', optgroup: 'Cars', icon: "https://www.svgrepo.com/show/408290/car-white.svg" },
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const checklist1 = new HpvCheckList('checklist1', {
+                searchPlaceholder: "Buscar por...",
+                selectAllMainText: "Selec. Todos Visíveis",
+                selectAllGroupText: "Selec. Grupo",
+                clearSearchTooltip: "Limpar a Busca",
+                emptyText: "Nenhum item disponível",
+                disabledText: "Este item está desabilitado",
+                defaultOptGroupText: "Padrão",
+                selectMode: 'single', // 'single' or 'multiple'
+                states: [0, 1],
+                maxSelectableItems: 2,
+                searchMode: 'local',
+                onSelect: (checkList, id, changedItem) => console.log('Selected:', id, changedItem),
+                onDeselect: (checkList, id, changedItem) => console.log('Deselected:', id, changedItem),
+                onSelectGroup: (checkList, groupName, group, changedItems) => console.log('Selected group:', groupName, changedItems),
+                onDeselectGroup: (checkList, groupName, group, changedItems) => console.log('Deselected group:', groupName, changedItems),
+                onCollapseGroup: (checkList, groupName, group, changedItems) => console.log('Collapsed group:', groupName, group, changedItems),
+                onExpandGroup: (checkList, groupName, group, changedItems) => console.log('Expanded group:', groupName, group, changedItems),
+                onSelectAll: (checkList, changedItems) => console.log('Selected all:', changedItems),
+                onDeselectAll: (checkList, changedItems) => console.log('Deselected all:', changedItems),
+
+                onLocalSearchResult: (checkList, searchTerm, visibleItems) => console.log('Search completed for term:', searchTerm),
+                onSearchInputDelay: (checkList, searchTerm, visibleItems) => console.log('Delayed search for:', searchTerm),
+                onClearSearch: () => console.log('Search cleared'),
+                
+                itemRendererFn: (item, disabledClass) => {
+                    const li = document.createElement('li');
+                    li.className = item.disabled ? disabledClass : '';
+                    li.innerHTML = `
+                        <div class="custom-checkbox" id="${item.key}" ${item.disabled ? 'data-disabled' : ''} ${item.checkedInclusion ? 'data-checked' : ''}>
+                            <div class="checkbox-inner"></div>
+                        </div>
+                        <div class="checkbox-label"><img src="${item.original.icon ? item.original.icon : 'https://placehold.co/32'}" loading="lazy" style="height: 32px;margin-right: 10px;"/>${item.label}</div>
+                    `;
+
+                    return li;
+                },
+
+                fieldMap: {
+                    keyField: 'id',
+                    labelField: 'label',
+                    valueField: 'value',
+                    optgroupField: 'optgroup',
+                    disabledField: 'disabled',
+                },
+            });
+
+            scope.checklist1 = checklist1;
+
+            console.log('Dropdown 1 selected items:', checklist1.items.getSelectedItems());
+            // console.log('Dropdown 2 selected items:', dropdown2.getSelectedItems());
+        });
+    </script>
+</body>
+</html>
