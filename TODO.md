@@ -10,7 +10,6 @@ support remote search
 BUGS:
 -----
 Updating orginal item to disable do not reflect rendered elements, not event calling current refresh methods
-Option Group still displays select. Group even on single mode.
 
 WONT DO: [ leaved to user handle on callback ]
 -------
