@@ -87,6 +87,7 @@ class HpvCheckList {
 		if (item && item.el) {
 			item.hiddenBySelection = true;
 			item.el.classList.add('fade-out');
+
 			setTimeout(() => {
 				this.items.remove(id + '');
 				this.ui.afterAddOrRemoveItems();
@@ -117,7 +118,7 @@ class HpvCheckList {
 	// }
 
 	setItemVisibility(id, attr, visible) {
-		const item = this.items.items.get(id);
+		const item = this.items.items.get(id + '');
 		if (item) {
 			item[attr] = visible;
 			this.items.items.set(id, item);
@@ -143,13 +144,13 @@ class HpvCheckList {
 
 		const groupedItems = this.items.getGroupedItems();
 		// count unique names in groupedItems.optgroup
-		const numberOfGroups = this.items.getGroupNames()
-			.length;
+		const numberOfGroups = this.items.getGroupNames().length;
 
 		for (const [groupName, items] of Object.entries(groupedItems)) {
 			if (groupName == defaultOptGroupText && numberOfGroups == 1) {
 				// hide group name if only one group
 				// plot an hr to separate items
+				// TODO: should be parametrized
 				const hr = document.createElement('hr');
 				hr.className = 'hr-no-optgroups';
 				fragment.appendChild(hr);
@@ -161,8 +162,10 @@ class HpvCheckList {
 					const optgroup = document.createElement('div');
 					optgroup.className = 'optgroup';
 					optgroup.innerHTML = `
-						<span>${groupName}</span>
-						<button class="select-all-group ${selectMode == 'single' ? 'select-single-mode' : ''}">${selectAllGroupText}</button>
+						<div class="optgroup-header">
+							<span>${groupName}</span>
+							<button class="select-all-group ${selectMode == 'single' ? 'select-single-mode' : ''}">${selectAllGroupText}</button>
+						</div>
 					`;
 
 					optgroup.setAttribute('group-name', groupName);
@@ -177,7 +180,9 @@ class HpvCheckList {
 
 				if ( itemRendererFn ) {
 					li = itemRendererFn(item, disabledClass);
-				} else {
+				}
+
+				if (!li) {
 					li = document.createElement('li');
 					li.className = item.disabled ? disabledClass : '';
 					li.innerHTML = `
@@ -188,10 +193,8 @@ class HpvCheckList {
 					`;
 				}
 
-				if ( li ) {
-					ul.appendChild(li);
-					item.el = li;
-				}
+				ul.appendChild(li);
+				item.el = li;
 			});
 			fragment.appendChild(ul);
 		}
@@ -279,7 +282,7 @@ class HpvCheckList {
 	}
 
 	toggleItemSelection(id) {
-		const item = this.items.items.get(id);
+		const item = this.items.items.get(id + '');
 		if (!item || item.nativeDisabled) return;
 
 		const currentStateIndex = this.options.states.indexOf(item.value);
@@ -558,8 +561,7 @@ class HpvChecklistSearchModule {
 		const newState = allInTargetState ? this.parent.options.states[0] : targetState;
 
 		visibleItems.forEach(([id, item]) => {
-			this.parent.items.items.get(id)
-				.value = newState;
+			this.parent.items.items.get(id + '').value = newState;
 		});
 
 		this.parent.updateItemStates();

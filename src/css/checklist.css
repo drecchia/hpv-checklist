@@ -92,6 +92,11 @@
     text-shadow: none;
     line-height: 20px;
 }
+.hpv-checklist .optgroup .optgroup-header {
+    display: flex;
+    margin-left: 10px;
+    width: 100%;
+}
 .hpv-checklist .optgroup::before {
     content: '▼';
     display: inline-block;
@@ -114,7 +119,7 @@
 .hpv-checklist .hpv-checklist-btn-group .select-all-main.select-single-mode {
     display: none;
 }
-.hpv-checklist .hpv-checklist-btn-group .select-all-group.select-single-mode {
+.hpv-checklist .hpv-checklist-checkbox-list .select-all-group.select-single-mode {
     visibility: hidden;
 }
 .hpv-checklist .select-all-group {
