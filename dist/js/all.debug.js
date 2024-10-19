@@ -32,6 +32,9 @@ class HpvCheckList {
 			onSearchInput: null,
 			onClearSearch: null,
 			onExclusionModeChange: null,
+			itemRendererFn: null,
+			groupRendererFn: null,
+			searchInputRendererFn: null,
 			items: [],
 			disabledClass: 'hpv-checklist-disabled',
 			fieldMap: {
@@ -80,13 +83,14 @@ class HpvCheckList {
 	}
 
 	removeItem(id) {
-		const item = this.items.items.get(id);
+		const item = this.items.items.get(id + '');
 
 		if (item && item.el) {
 			item.hiddenBySelection = true;
 			item.el.classList.add('fade-out');
+
 			setTimeout(() => {
-				this.items.remove(id);
+				this.items.remove(id + '');
 				this.ui.afterAddOrRemoveItems();
 			}, 300); // Match this with the CSS transition duration
 		}
@@ -115,7 +119,7 @@ class HpvCheckList {
 	// }
 
 	setItemVisibility(id, attr, visible) {
-		const item = this.items.items.get(id);
+		const item = this.items.items.get(id + '');
 		if (item) {
 			item[attr] = visible;
 			this.items.items.set(id, item);
@@ -130,7 +134,9 @@ class HpvCheckList {
 			defaultOptGroupText,
 			selectMode,
 			selectAllGroupText,
-			disabledClass
+			disabledClass,
+			itemRendererFn,
+			groupRendererFn
 		} = this.options;
 
 		const fragment = document.createDocumentFragment();
@@ -139,41 +145,56 @@ class HpvCheckList {
 
 		const groupedItems = this.items.getGroupedItems();
 		// count unique names in groupedItems.optgroup
-		const numberOfGroups = this.items.getGroupNames()
-			.length;
+		const numberOfGroups = this.items.getGroupNames().length;
 
 		for (const [groupName, items] of Object.entries(groupedItems)) {
 			if (groupName == defaultOptGroupText && numberOfGroups == 1) {
 				// hide group name if only one group
 				// plot an hr to separate items
+				// TODO: should be parametrized
 				const hr = document.createElement('hr');
 				hr.className = 'hr-no-optgroups';
 				fragment.appendChild(hr);
 			} else {
-				const optgroup = document.createElement('div');
-				optgroup.className = 'optgroup';
-				optgroup.innerHTML = `
-					<span>${groupName}</span>
-					<button class="select-all-group ${selectMode == 'single' ? 'select-single-mode' : ''}">${selectAllGroupText}</button>
-				`;
+				if ( groupRendererFn ) {
+					const group = groupRendererFn(groupName, selectMode, selectAllGroupText);
+					fragment.appendChild(group);
+				} else {
+					const optgroup = document.createElement('div');
+					optgroup.className = 'optgroup';
+					optgroup.innerHTML = `
+						<div class="optgroup-header">
+							<span>${groupName}</span>
+							<button class="select-all-group ${selectMode == 'single' ? 'select-single-mode' : ''}">${selectAllGroupText}</button>
+						</div>
+					`;
 
-				optgroup.setAttribute('group-name', groupName);
+					optgroup.setAttribute('group-name', groupName);
 
-				fragment.appendChild(optgroup);
+					fragment.appendChild(optgroup);
+				}
 			}
 
 			const ul = document.createElement('ul');
 			items.forEach((item) => {
-				const li = document.createElement('li');
-				li.className = item.disabled ? disabledClass : '';
-				li.innerHTML = `
-					<div class="custom-checkbox" id="${item.key}" ${item.disabled ? 'data-disabled' : ''} ${item.checkedInclusion ? 'data-checked' : ''}>
-						<div class="checkbox-inner"></div>
-					</div>
-					<div class="checkbox-label">${item.label}</div>
-				`;
-				ul.appendChild(li);
+				let li;
 
+				if ( itemRendererFn ) {
+					li = itemRendererFn(item, disabledClass);
+				}
+
+				if (!li) {
+					li = document.createElement('li');
+					li.className = item.disabled ? disabledClass : '';
+					li.innerHTML = `
+						<div class="custom-checkbox" id="${item.key}" ${item.disabled ? 'data-disabled' : ''} ${item.checkedInclusion ? 'data-checked' : ''}>
+							<div class="checkbox-inner"></div>
+						</div>
+						<div class="checkbox-label">${item.label}</div>
+					`;
+				}
+
+				ul.appendChild(li);
 				item.el = li;
 			});
 			fragment.appendChild(ul);
@@ -232,12 +253,17 @@ class HpvCheckList {
 				if (e.target.tagName.toLowerCase() === 'button') return;
 				const isCollapsing = !group.classList.contains('collapsed');
 				group.classList.toggle('collapsed');
+				
 				const ul = group.nextElementSibling;
 				if (ul.tagName.toLowerCase() === 'ul') {
 					ul.style.display = isCollapsing ? 'none' : '';
 				}
+				
 				const selectAllBtn = group.querySelector('.select-all-group');
-				selectAllBtn.style.visibility = isCollapsing ? 'hidden' : 'visible';
+				// check if do not have class select-single-mode
+				if (!selectAllBtn.classList.contains('select-single-mode')) {;
+					selectAllBtn.style.visibility = isCollapsing ? 'hidden' : 'visible';
+				}
 
 				if (isCollapsing && this.options.onCollapseGroup) {
 					this.options.onCollapseGroup(this, groupName, group, this.getItemsByGroup(groupName));
@@ -262,7 +288,7 @@ class HpvCheckList {
 	}
 
 	toggleItemSelection(id) {
-		const item = this.items.items.get(id);
+		const item = this.items.items.get(id + '');
 		if (!item || item.nativeDisabled) return;
 
 		const currentStateIndex = this.options.states.indexOf(item.value);
@@ -421,6 +447,8 @@ class HpvCheckListItemsModule {
 			// internal
 			nativeDisabled: disabled,
 			visibleAfterSearch: true,
+			// reference on renderers
+			original: item,
 		});
 
 		if (fireAfterChange) {
@@ -521,16 +549,25 @@ class HpvChecklistSearchModule {
 	}
 
 	toggleVisibleItems(targetState) {
-		const visibleItems = Array.from(this.parent.items.items.entries())
+		let visibleItems = Array.from(this.parent.items.items.entries())
 			.filter(([_, item]) => item.visibleAfterSearch && !item.nativeDisabled);
+
+		// if selectionMode is single, we need to deselect all items first
+		if (this.parent.options.selectMode === 'single') {
+			// 1. deselect all items first
+			this.parent.items.items.forEach((item, id) => {
+				item.value = this.parent.options.states[0];
+			});
+			// 2. keep just the first item on visibleItems
+			visibleItems = [ visibleItems[0] ];
+		}
 
 		const allInTargetState = visibleItems.every(([_, item]) => item.value === targetState);
 
 		const newState = allInTargetState ? this.parent.options.states[0] : targetState;
 
 		visibleItems.forEach(([id, item]) => {
-			this.parent.items.items.get(id)
-				.value = newState;
+			this.parent.items.items.get(id + '').value = newState;
 		});
 
 		this.parent.updateItemStates();
@@ -661,14 +698,23 @@ class HpvCheckListUIModule {
 			clearSearchTooltip,
 			selectAllMainText,
 			emptyText,
-			selectMode
+			selectMode,
+			searchInputRendererFn
 		} = this.parent.options;
 
+		if ( searchInputRendererFn ) {
+			const searchInputEl = searchInputRendererFn(searchPlaceholder, clearSearchTooltip);
+			this.parent.container.appendChild(searchInputEl);
+		} else {
+			const searchInputHtml = `
+				<div class="search-container">
+					<input type="text" class="search-input" placeholder="${searchPlaceholder}">
+					<button class="clear-search" title="${clearSearchTooltip}">&times;</button>
+				</div>`;
+			this.parent.container.innerHTML += searchInputHtml;
+		}
+
 		const dropdownHTML = `
-			<div class="search-container">
-				<input type="text" class="search-input" placeholder="${searchPlaceholder}">
-				<button class="clear-search" title="${clearSearchTooltip}">&times;</button>
-			</div>
 			<div class="hpv-checklist-content">
 				<div class="hpv-checklist-btn-group">
 					<button class="select-all-main ${selectMode == 'single' ? 'select-single-mode' : ''}">${selectAllMainText}</button>
